@@ -15,7 +15,7 @@ Design notes:
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 import shodan as shodan_lib
 from shodan import APIError as ShodanException

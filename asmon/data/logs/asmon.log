@@ -1,0 +1,192 @@
+2026-02-02 19:24:50,341 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:24:50,342 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:25:06,263 [WARNING] asmon.discovery — crt.sh query failed for example.com: HTTPSConnectionPool(host='crt.sh', port=443): Read timed out. (read timeout=15)
+2026-02-02 19:25:06,263 [INFO] asmon.discovery — Discovery complete: 0 subdomains, 0 unique IPs
+2026-02-02 19:25:06,264 [INFO] asmon — Passive discovery: 0 subdomains, 0 IPs
+2026-02-02 19:25:06,264 [INFO] asmon — Shodan not enabled. Use --shodan to enrich results.
+2026-02-02 19:25:06,269 [INFO] asmon.storage — Snapshot saved: example_com_8b41880d-b3bd-470c-8f0c-d32e3d73214e.json
+2026-02-02 19:25:06,270 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_8b41880d-b3bd-470c-8f0c-d32e3d73214e.json
+2026-02-02 19:26:46,469 [INFO] asmon — Starting scan for target: kiberplatforma.az
+2026-02-02 19:26:46,470 [INFO] asmon.discovery — Passive discovery started for: kiberplatforma.az
+2026-02-02 19:26:50,694 [WARNING] asmon.discovery — crt.sh query failed for kiberplatforma.az: 503 Server Error: Service Unavailable for url: https://crt.sh/?q=%25.kiberplatforma.az&output=json
+2026-02-02 19:26:50,695 [INFO] asmon.discovery — Discovery complete: 0 subdomains, 0 unique IPs
+2026-02-02 19:26:50,696 [INFO] asmon — Passive discovery: 0 subdomains, 0 IPs
+2026-02-02 19:26:50,697 [INFO] asmon — Shodan not enabled. Use --shodan to enrich results.
+2026-02-02 19:26:50,702 [INFO] asmon.storage — Snapshot saved: kiberplatforma_az_00b6e9d6-481f-4475-9e04-918ecba1cc5c.json
+2026-02-02 19:26:50,703 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\kiberplatforma_az_00b6e9d6-481f-4475-9e04-918ecba1cc5c.json
+2026-02-02 19:27:50,870 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:27:50,872 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:27:51,714 [WARNING] asmon.discovery — crt.sh query failed for example.com: 502 Server Error: Bad Gateway for url: https://crt.sh/?q=%25.example.com&output=json
+2026-02-02 19:27:51,714 [INFO] asmon.discovery — Discovery complete: 0 subdomains, 0 unique IPs
+2026-02-02 19:27:51,714 [INFO] asmon — Passive discovery: 0 subdomains, 0 IPs
+2026-02-02 19:27:51,715 [INFO] asmon — Shodan not enabled. Use --shodan to enrich results.
+2026-02-02 19:27:51,716 [INFO] asmon.storage — Snapshot saved: example_com_c64c31ae-a573-400c-af44-93ab191288a0.json
+2026-02-02 19:27:51,716 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_c64c31ae-a573-400c-af44-93ab191288a0.json
+2026-02-02 19:27:51,732 [INFO] asmon.diff — Computing diff: baseline=8b41880d-b3bd-470c-8f0c-d32e3d73214e (0 hosts) vs current=c64c31ae-a573-400c-af44-93ab191288a0 (0 hosts)
+2026-02-02 19:27:51,732 [INFO] asmon.diff — Diff: +0 -0 ~0
+2026-02-02 19:28:31,728 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:28:31,729 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:28:32,747 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:28:32,747 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:28:32,748 [ERROR] asmon — Shodan API key is required. Set SHODAN_API_KEY env var or pass --shodan-key.
+2026-02-02 19:30:02,459 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:30:02,459 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:30:03,345 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:30:03,345 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:30:03,346 [INFO] asmon.shodan — ShodanClient initialised.
+2026-02-02 19:30:03,346 [INFO] asmon — Enriching 2 IPs individually via Shodan.
+2026-02-02 19:30:04,713 [WARNING] asmon — Shodan lookup failed for 104.18.26.120: name 'ShodanException' is not defined
+2026-02-02 19:30:06,341 [WARNING] asmon — Shodan lookup failed for 104.18.27.120: name 'ShodanException' is not defined
+2026-02-02 19:30:06,345 [INFO] asmon.storage — Snapshot saved: example_com_f979c0e8-b36d-4220-9917-1372b57df827.json
+2026-02-02 19:30:06,346 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_f979c0e8-b36d-4220-9917-1372b57df827.json
+2026-02-02 19:34:39,975 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:34:39,975 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:34:41,356 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:34:41,357 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:34:41,358 [INFO] asmon — Shodan not enabled. Use --shodan to enrich results.
+2026-02-02 19:34:41,369 [INFO] asmon.storage — Snapshot saved: example_com_474c3f38-02ed-4371-8c3c-71c92d6e6f5d.json
+2026-02-02 19:34:41,373 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_474c3f38-02ed-4371-8c3c-71c92d6e6f5d.json
+2026-02-02 19:52:51,966 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:52:51,967 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:52:53,129 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:52:53,130 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:52:53,131 [ERROR] asmon — Shodan API key is required. Set SHODAN_API_KEY env var or pass --shodan-key.
+2026-02-02 19:53:11,444 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:53:11,444 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:53:12,300 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:53:12,301 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:53:12,301 [INFO] asmon.shodan — ShodanClient initialised.
+2026-02-02 19:53:12,301 [INFO] asmon — Enriching 2 IPs individually via Shodan.
+2026-02-02 19:53:13,063 [WARNING] asmon — Shodan lookup failed for 104.18.26.120: name 'ShodanException' is not defined
+2026-02-02 19:53:14,172 [WARNING] asmon — Shodan lookup failed for 104.18.27.120: name 'ShodanException' is not defined
+2026-02-02 19:53:14,173 [INFO] asmon.storage — Snapshot saved: example_com_2ef8360e-8efc-4143-99cc-12f09d9ce69b.json
+2026-02-02 19:53:14,173 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_2ef8360e-8efc-4143-99cc-12f09d9ce69b.json
+2026-02-02 19:53:14,206 [INFO] asmon.diff — Computing diff: baseline=474c3f38-02ed-4371-8c3c-71c92d6e6f5d (0 hosts) vs current=2ef8360e-8efc-4143-99cc-12f09d9ce69b (0 hosts)
+2026-02-02 19:53:14,206 [INFO] asmon.diff — Diff: +0 -0 ~0
+2026-02-02 19:56:24,244 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:56:24,244 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:56:25,264 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:56:25,264 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:56:25,265 [INFO] asmon.shodan — ShodanClient initialised.
+2026-02-02 19:56:25,265 [INFO] asmon — Enriching 2 IPs individually via Shodan.
+2026-02-02 19:56:26,015 [WARNING] asmon — Shodan lookup failed for 104.18.26.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 19:56:27,131 [WARNING] asmon — Shodan lookup failed for 104.18.27.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 19:56:27,136 [INFO] asmon.storage — Snapshot saved: example_com_9d98387a-89c1-4cd2-bfea-399b96ac25d2.json
+2026-02-02 19:56:27,138 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_9d98387a-89c1-4cd2-bfea-399b96ac25d2.json
+2026-02-02 19:56:27,165 [INFO] asmon.diff — Computing diff: baseline=2ef8360e-8efc-4143-99cc-12f09d9ce69b (0 hosts) vs current=9d98387a-89c1-4cd2-bfea-399b96ac25d2 (0 hosts)
+2026-02-02 19:56:27,165 [INFO] asmon.diff — Diff: +0 -0 ~0
+2026-02-02 19:56:35,394 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:56:35,395 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:56:36,333 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:56:36,333 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:56:36,333 [INFO] asmon.shodan — ShodanClient initialised.
+2026-02-02 19:56:36,333 [INFO] asmon — Enriching 2 IPs individually via Shodan.
+2026-02-02 19:56:37,064 [WARNING] asmon — Shodan lookup failed for 104.18.26.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 19:56:38,173 [WARNING] asmon — Shodan lookup failed for 104.18.27.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 19:56:38,178 [INFO] asmon.storage — Snapshot saved: example_com_9135de99-1c5f-436a-a3ba-7a06b97ecb9e.json
+2026-02-02 19:56:38,179 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_9135de99-1c5f-436a-a3ba-7a06b97ecb9e.json
+2026-02-02 19:57:47,866 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:57:47,867 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:57:48,838 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:57:48,839 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:57:48,840 [INFO] asmon.shodan — ShodanClient initialised.
+2026-02-02 19:57:48,841 [INFO] asmon — Enriching 2 IPs individually via Shodan.
+2026-02-02 19:57:49,573 [WARNING] asmon — Shodan lookup failed for 104.18.26.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 19:57:50,687 [WARNING] asmon — Shodan lookup failed for 104.18.27.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 19:57:50,693 [INFO] asmon.storage — Snapshot saved: example_com_02fb3abd-a735-47cb-bfea-87177ff6c38b.json
+2026-02-02 19:57:50,694 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_02fb3abd-a735-47cb-bfea-87177ff6c38b.json
+2026-02-02 19:57:50,732 [INFO] asmon.diff — Computing diff: baseline=9135de99-1c5f-436a-a3ba-7a06b97ecb9e (0 hosts) vs current=02fb3abd-a735-47cb-bfea-87177ff6c38b (0 hosts)
+2026-02-02 19:57:50,733 [INFO] asmon.diff — Diff: +0 -0 ~0
+2026-02-02 19:59:08,875 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:59:08,876 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:59:09,853 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:59:09,855 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:59:09,855 [ERROR] asmon — Shodan API key is required. Set SHODAN_API_KEY env var or pass --shodan-key.
+2026-02-02 19:59:26,742 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 19:59:26,743 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 19:59:27,655 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 19:59:27,655 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 19:59:27,656 [INFO] asmon.shodan — ShodanClient initialised.
+2026-02-02 19:59:27,657 [INFO] asmon — Enriching 2 IPs individually via Shodan.
+2026-02-02 19:59:28,420 [WARNING] asmon — Shodan lookup failed for 104.18.26.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 19:59:29,531 [WARNING] asmon — Shodan lookup failed for 104.18.27.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 19:59:29,537 [INFO] asmon.storage — Snapshot saved: example_com_97e842b5-ab06-4cb7-88d2-40fdb09af880.json
+2026-02-02 19:59:29,539 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_97e842b5-ab06-4cb7-88d2-40fdb09af880.json
+2026-02-02 19:59:29,567 [INFO] asmon.diff — Computing diff: baseline=02fb3abd-a735-47cb-bfea-87177ff6c38b (0 hosts) vs current=97e842b5-ab06-4cb7-88d2-40fdb09af880 (0 hosts)
+2026-02-02 19:59:29,568 [INFO] asmon.diff — Diff: +0 -0 ~0
+2026-02-02 20:00:02,798 [INFO] asmon — Starting scan for target: example.com
+2026-02-02 20:00:02,798 [INFO] asmon.discovery — Passive discovery started for: example.com
+2026-02-02 20:00:03,706 [INFO] asmon.discovery — Discovery complete: 6 subdomains, 2 unique IPs
+2026-02-02 20:00:03,707 [INFO] asmon — Passive discovery: 6 subdomains, 2 IPs
+2026-02-02 20:00:03,708 [INFO] asmon.shodan — ShodanClient initialised.
+2026-02-02 20:00:03,709 [INFO] asmon — Enriching 2 IPs individually via Shodan.
+2026-02-02 20:00:06,529 [WARNING] asmon — Shodan lookup failed for 104.18.26.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 20:00:08,073 [WARNING] asmon — Shodan lookup failed for 104.18.27.120: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 20:00:08,075 [INFO] asmon.storage — Snapshot saved: example_com_63a6fdf5-4b56-4c9e-a0ed-2aa462d9dc89.json
+2026-02-02 20:00:08,076 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\example_com_63a6fdf5-4b56-4c9e-a0ed-2aa462d9dc89.json
+2026-02-02 20:00:08,098 [INFO] asmon.diff — Computing diff: baseline=97e842b5-ab06-4cb7-88d2-40fdb09af880 (0 hosts) vs current=63a6fdf5-4b56-4c9e-a0ed-2aa462d9dc89 (0 hosts)
+2026-02-02 20:00:08,098 [INFO] asmon.diff — Diff: +0 -0 ~0
+2026-02-02 20:01:06,790 [INFO] asmon — Starting scan for target: kiberplatforma.az
+2026-02-02 20:01:06,791 [INFO] asmon.discovery — Passive discovery started for: kiberplatforma.az
+2026-02-02 20:01:22,740 [INFO] asmon.discovery — Discovery complete: 101 subdomains, 2 unique IPs
+2026-02-02 20:01:22,740 [INFO] asmon — Passive discovery: 101 subdomains, 2 IPs
+2026-02-02 20:01:22,740 [INFO] asmon.shodan — ShodanClient initialised.
+2026-02-02 20:01:22,741 [INFO] asmon — Enriching 2 IPs individually via Shodan.
+2026-02-02 20:01:24,064 [WARNING] asmon — Shodan lookup failed for 104.21.85.101: Access denied (403 Forbidden)
+2026-02-02 20:01:25,360 [WARNING] asmon — Shodan lookup failed for 172.67.204.114: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS13335', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 20:01:25,365 [INFO] asmon.storage — Snapshot saved: kiberplatforma_az_1dd08bcd-0ba5-4fec-b32e-96715e41c286.json
+2026-02-02 20:01:25,366 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\kiberplatforma_az_1dd08bcd-0ba5-4fec-b32e-96715e41c286.json
+2026-02-02 20:01:25,389 [INFO] asmon.diff — Computing diff: baseline=00b6e9d6-481f-4475-9e04-918ecba1cc5c (0 hosts) vs current=1dd08bcd-0ba5-4fec-b32e-96715e41c286 (0 hosts)
+2026-02-02 20:01:25,389 [INFO] asmon.diff — Diff: +0 -0 ~0
+2026-02-02 20:08:59,954 [INFO] asmon — Starting scan for target: zedageinfotech.co.in
+2026-02-02 20:08:59,954 [INFO] asmon.discovery — Passive discovery started for: zedageinfotech.co.in
+2026-02-02 20:09:16,082 [INFO] asmon.discovery — Discovery complete: 13 subdomains, 5 unique IPs
+2026-02-02 20:09:16,083 [INFO] asmon — Passive discovery: 13 subdomains, 5 IPs
+2026-02-02 20:09:16,084 [INFO] asmon.shodan — ShodanClient initialised.
+2026-02-02 20:09:16,085 [INFO] asmon — Enriching 5 IPs individually via Shodan.
+2026-02-02 20:09:18,949 [WARNING] asmon — Shodan lookup failed for 34.120.251.119: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS396982', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 20:09:20,358 [WARNING] asmon — Shodan lookup failed for 92.113.16.166: Access denied (403 Forbidden)
+2026-02-02 20:09:22,001 [WARNING] asmon — Shodan lookup failed for 92.113.16.17: Access denied (403 Forbidden)
+2026-02-02 20:09:23,621 [WARNING] asmon — Shodan lookup failed for 92.113.23.130: 1 validation error for HostRecord
+asn
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='AS47583', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing
+2026-02-02 20:09:24,943 [WARNING] asmon — Shodan lookup failed for 92.113.23.46: Access denied (403 Forbidden)
+2026-02-02 20:09:24,946 [INFO] asmon.storage — Snapshot saved: zedageinfotech_co_in_70337472-8aa5-47b1-a14e-d68e8bf5e11a.json
+2026-02-02 20:09:24,946 [INFO] asmon — Snapshot saved: D:\github projects\asmon\asmon\data\snapshots\zedageinfotech_co_in_70337472-8aa5-47b1-a14e-d68e8bf5e11a.json

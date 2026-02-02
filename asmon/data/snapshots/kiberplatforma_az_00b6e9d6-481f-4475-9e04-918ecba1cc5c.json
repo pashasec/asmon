@@ -1,0 +1,12 @@
+{
+  "snapshot_id": "00b6e9d6-481f-4475-9e04-918ecba1cc5c",
+  "target": "kiberplatforma.az",
+  "captured_at": "2026-02-02T15:26:50.699157Z",
+  "hosts": [],
+  "metadata": {
+    "mode": "passive",
+    "shodan_enabled": false,
+    "subdomains_discovered": 0,
+    "ips_discovered": 0
+  }
+}
