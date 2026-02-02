@@ -1,0 +1,12 @@
+{
+  "snapshot_id": "70337472-8aa5-47b1-a14e-d68e8bf5e11a",
+  "target": "zedageinfotech.co.in",
+  "captured_at": "2026-02-02T16:09:24.943963Z",
+  "hosts": [],
+  "metadata": {
+    "mode": "passive",
+    "shodan_enabled": true,
+    "subdomains_discovered": 13,
+    "ips_discovered": 5
+  }
+}

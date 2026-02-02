@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(dir:*)",
+      "Bash(python -m asmon.asmon:*)",
+      "Bash(pip install:*)",
+      "Bash(python tests/test_diff.py:*)",
+      "Bash(python -m tests.test_diff:*)",
+      "Bash(python:*)"
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+# AI provider SDKs (optional)
+# Install only if you intend to use --ai-summary
+openai>=1.0
+anthropic>=0.18

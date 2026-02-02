@@ -1,0 +1,12 @@
+{
+  "snapshot_id": "9135de99-1c5f-436a-a3ba-7a06b97ecb9e",
+  "target": "example.com",
+  "captured_at": "2026-02-02T15:56:38.175051Z",
+  "hosts": [],
+  "metadata": {
+    "mode": "passive",
+    "shodan_enabled": true,
+    "subdomains_discovered": 6,
+    "ips_discovered": 2
+  }
+}
