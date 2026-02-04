@@ -8,9 +8,7 @@ Two output modes:
 Colours are stripped automatically when stdout is not a TTY.
 """
 
-import json
 import sys
-import os
 from asmon.models import SurfaceDiff, Snapshot
 
 
@@ -125,6 +123,25 @@ def _render_diff_text(diff: SurfaceDiff) -> str:
             lines.append(f"    • {change.ip}  {change.detail}")
         lines.append("")
 
+    # Show web risk changes
+    web_risks = [c for c in diff.changes if c.entity_type == "web_risk"]
+    if web_risks:
+        new_risks = [c for c in web_risks if c.change_type == "added"]
+        resolved_risks = [c for c in web_risks if c.change_type == "removed"]
+
+        if new_risks:
+            lines.append(f"  {C.CYAN}{C.BOLD}[NEW WEB RISKS]{C.RESET}")
+            for change in new_risks:
+                severity_color = C.RED if change.severity == "high" else (C.YELLOW if change.severity == "medium" else C.DIM)
+                lines.append(f"    {severity_color}•{C.RESET} {change.ip}  {change.detail}")
+            lines.append("")
+
+        if resolved_risks:
+            lines.append(f"  {C.GREEN}[RESOLVED WEB RISKS]{C.RESET}")
+            for change in resolved_risks:
+                lines.append(f"    {C.GREEN}•{C.RESET} {change.ip}  {change.detail}")
+            lines.append("")
+
     lines.append(f"{C.BOLD}{'─' * 70}{C.RESET}\n")
     return "\n".join(lines)
 
@@ -160,5 +177,53 @@ def render_snapshot_summary(snapshot: Snapshot) -> str:
             f"{C.YELLOW}  [ACTIVE SCAN]{C.RESET}  "
             f"CVEs: {total_cves} total ({C.RED}{critical_cves} critical{C.RESET}, {C.YELLOW}{high_cves} high{C.RESET})"
         )
+
+    # Web risk info
+    if snapshot.web_risk_enabled:
+        total_signals = sum(
+            len(signal)
+            for h in snapshot.hosts
+            for report in h.web_risks
+            for signal in [report.signals]
+        )
+        high_signals = sum(
+            1
+            for h in snapshot.hosts
+            for report in h.web_risks
+            for signal in report.signals
+            if signal.severity == "high"
+        )
+        medium_signals = sum(
+            1
+            for h in snapshot.hosts
+            for report in h.web_risks
+            for signal in report.signals
+            if signal.severity == "medium"
+        )
+
+        lines.append(
+            f"{C.CYAN}  [WEB RISK]{C.RESET}  "
+            f"Signals: {total_signals} total ({C.RED}{high_signals} high{C.RESET}, {C.YELLOW}{medium_signals} medium{C.RESET})"
+        )
+
+    # Risk score
+    if snapshot.risk_score:
+        score = snapshot.risk_score
+        level_color = {
+            "critical": C.RED,
+            "high": C.YELLOW,
+            "medium": C.YELLOW,
+            "low": C.GREEN,
+            "info": C.DIM,
+        }.get(score.level, C.DIM)
+
+        lines.append(
+            f"{C.BOLD}  Risk Score: {level_color}{score.score}/100 ({score.level.upper()}){C.RESET}"
+        )
+
+        # Show top risk factors
+        if score.factors:
+            for factor in score.factors[:3]:
+                lines.append(f"    • {factor}")
 
     return "\n".join(lines)

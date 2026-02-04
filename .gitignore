@@ -1,5 +1,5 @@
-data/snapshots/*.json
-data/logs/*.log
+# Runtime-generated files
+asmon/data/
 __pycache__/
 *.pyc
 .env
@@ -7,3 +7,8 @@ venv/
 .venv/
 env/
 path/
+*.tmp
+.DS_Store
+*.egg-info/
+dist/
+build/

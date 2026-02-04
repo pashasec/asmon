@@ -29,7 +29,6 @@ import sys
 import argparse
 import uuid
 import logging
-from datetime import datetime, timezone
 
 # ---------------------------------------------------------------------------
 # Imports — all absolute from asmon package
@@ -130,9 +129,99 @@ def build_parser() -> argparse.ArgumentParser:
         help="Correlate detected services with CVE database (metadata only, no exploits)."
     )
 
+    # --- Web Risk Analysis ---
+    web_group = parser.add_argument_group(
+        "web risk analysis",
+        "Passive HTTP observation for security exposure signals. "
+        "Uses only HEAD/GET requests — no payloads, no fuzzing."
+    )
+    web_group.add_argument(
+        "--web-risk",
+        action="store_true",
+        help="Enable web risk signal detection (headers, cookies, exposed endpoints)."
+    )
+    web_group.add_argument(
+        "--web-risk-timeout",
+        type=int,
+        default=10,
+        help="HTTP request timeout in seconds. Default: 10"
+    )
+    web_group.add_argument(
+        "--web-risk-no-endpoints",
+        action="store_true",
+        help="Skip checking for exposed sensitive endpoints."
+    )
+
+    # --- Vulnerability Scanning ---
+    vuln_group = parser.add_argument_group(
+        "vulnerability scanning (AUTHORIZATION REQUIRED)",
+        "Active security testing modules. Sends payloads to detect vulnerabilities. "
+        "ONLY use on systems you have explicit authorization to test."
+    )
+    vuln_group.add_argument(
+        "--vuln-scan",
+        action="store_true",
+        help="Enable vulnerability scanning modules. REQUIRES AUTHORIZATION."
+    )
+    vuln_group.add_argument(
+        "--vuln-modules",
+        default=None,
+        help="Comma-separated list of modules to run (default: all). "
+             "Options: ssl_analysis,endpoint_discovery,subdomain_takeover,"
+             "sqli_detection,xss_detection,lfi_detection,rce_detection,oob_detection"
+    )
+    vuln_group.add_argument(
+        "--vuln-rate-limit",
+        type=int,
+        default=10,
+        help="Max requests per second for vuln scanning. Default: 10"
+    )
+    vuln_group.add_argument(
+        "--vuln-timeout",
+        type=int,
+        default=10,
+        help="Request timeout for vuln scanning. Default: 10"
+    )
+    vuln_group.add_argument(
+        "--callback-url",
+        default=None,
+        help="OOB callback server URL for blind vulnerability detection."
+    )
+    vuln_group.add_argument(
+        "--vuln-skip-warning",
+        action="store_true",
+        help="Skip authorization warning prompt (for automation)."
+    )
+    vuln_group.add_argument(
+        "--vuln-url",
+        action="append",
+        default=[],
+        help="Specific URL(s) with parameters to test (can be used multiple times). "
+             "Example: --vuln-url 'http://example.com/page?id=1'"
+    )
+    vuln_group.add_argument(
+        "--vuln-crawl",
+        action="store_true",
+        help="Crawl the target to discover URLs with parameters for testing."
+    )
+    vuln_group.add_argument(
+        "--vuln-crawl-depth",
+        type=int,
+        default=3,
+        help="Maximum crawl depth for URL discovery. Default: 3"
+    )
+    vuln_group.add_argument(
+        "--vuln-crawl-pages",
+        type=int,
+        default=50,
+        help="Maximum pages to crawl. Default: 50"
+    )
+
     # --- Misc ---
     parser.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                         default=None, help="Override log level.")
+    parser.add_argument("--clean", action="store_true",
+                        help="Delete the snapshot created during this run after output is printed.")
 
     return parser
 
@@ -141,18 +230,33 @@ def build_parser() -> argparse.ArgumentParser:
 # Helper functions
 # ---------------------------------------------------------------------------
 
-def _create_basic_host(ip: str) -> HostRecord:
+def _create_basic_host(ip: str, hostnames: list[str] | None = None) -> HostRecord:
     """
     Create a minimal host record from discovered IP without Shodan enrichment.
     Used when Shodan is disabled or enrichment fails.
     """
     return HostRecord(
         ip=ip,
-        hostnames=[],
+        hostnames=hostnames or [],
         services=[],
         source="discovery",
         shodan_enriched=False,
     )
+
+
+def _build_ip_to_hostnames(disc_results: dict) -> dict[str, list[str]]:
+    """
+    Build a mapping from IP → list of hostnames from discovery results.
+    This ensures we preserve hostname info even without Shodan.
+    """
+    ip_to_hostnames: dict[str, list[str]] = {}
+    for hostname, ips in disc_results.get("resolved", {}).items():
+        for ip in ips:
+            if ip not in ip_to_hostnames:
+                ip_to_hostnames[ip] = []
+            if hostname not in ip_to_hostnames[ip]:
+                ip_to_hostnames[ip].append(hostname)
+    return ip_to_hostnames
 
 
 # ---------------------------------------------------------------------------
@@ -202,6 +306,9 @@ def main() -> int:
     logger.info("Passive discovery: %d subdomains, %d IPs",
                 len(disc_results["subdomains"]), len(discovered_ips))
 
+    # --- Build IP→hostname mapping from discovery ---
+    ip_to_hostnames = _build_ip_to_hostnames(disc_results)
+
     # --- Shodan enrichment ---
     hosts = []
     if args.shodan:
@@ -222,14 +329,18 @@ def main() -> int:
                 try:
                     host = shodan.host_details(ip)
                     if host:
+                        # Merge discovered hostnames with Shodan data
+                        for hn in ip_to_hostnames.get(ip, []):
+                            if hn not in host.hostnames:
+                                host.hostnames.append(hn)
                         hosts.append(host)
                     else:
                         # No Shodan data available - create basic record
-                        hosts.append(_create_basic_host(ip))
+                        hosts.append(_create_basic_host(ip, ip_to_hostnames.get(ip, [])))
                 except Exception as exc:
                     logger.warning("Shodan lookup failed for %s: %s", ip, exc)
                     # Preserve discovery data even when enrichment fails
-                    hosts.append(_create_basic_host(ip))
+                    hosts.append(_create_basic_host(ip, ip_to_hostnames.get(ip, [])))
         else:
             logger.info("Running Shodan domain search for %s", root_domain)
             try:
@@ -240,15 +351,15 @@ def main() -> int:
                 for ip in discovered_ips:
                     if ip not in shodan_ips:
                         logger.debug("IP %s not in Shodan results, adding as basic record", ip)
-                        hosts.append(_create_basic_host(ip))
+                        hosts.append(_create_basic_host(ip, ip_to_hostnames.get(ip, [])))
             except Exception as exc:
                 logger.warning("Shodan search failed: %s", exc)
                 # Fallback: create basic records for all discovered IPs
                 logger.info("Using discovery data without Shodan enrichment")
-                hosts = [_create_basic_host(ip) for ip in discovered_ips]
+                hosts = [_create_basic_host(ip, ip_to_hostnames.get(ip, [])) for ip in discovered_ips]
     else:
         logger.info("Shodan not enabled. Creating records from passive discovery.")
-        hosts = [_create_basic_host(ip) for ip in discovered_ips]
+        hosts = [_create_basic_host(ip, ip_to_hostnames.get(ip, [])) for ip in discovered_ips]
 
     # --- Active scanning (NEW) ---
     if args.active:
@@ -271,6 +382,191 @@ def main() -> int:
             except Exception as exc:
                 logger.warning("Active scan failed for %s: %s", host.ip, exc)
 
+    # --- Web risk analysis ---
+    if args.web_risk:
+        logger.info("Web risk analysis enabled - using passive HTTP observation")
+
+        from asmon.web.analyzer import WebRiskAnalyzer, merge_web_risk_results
+
+        web_analyzer = WebRiskAnalyzer(
+            timeout=args.web_risk_timeout,
+            check_endpoints=not args.web_risk_no_endpoints,
+        )
+
+        logger.info("Starting web risk scan on %d hosts", len(hosts))
+        for host in hosts:
+            try:
+                # Determine which ports to scan for web services
+                web_ports = []
+
+                # Check services for HTTP/HTTPS ports
+                for svc in host.services:
+                    if svc.port in (80, 443, 8080, 8443, 8000, 8888) or \
+                       (svc.service_name and svc.service_name.lower() in ("http", "https")):
+                        web_ports.append(svc.port)
+
+                # Default to 443 and 80 if no services detected
+                if not web_ports:
+                    web_ports = [443, 80]
+
+                # Use first hostname if available, otherwise IP
+                hostname = host.hostnames[0] if host.hostnames else None
+
+                reports = []
+                for port in set(web_ports):
+                    try:
+                        report = web_analyzer.analyze(host.ip, port=port, hostname=hostname)
+                        if report.signals:  # Only add if we found something
+                            reports.append(report)
+                    except Exception as port_exc:
+                        logger.debug("Web risk scan failed for %s:%d: %s", host.ip, port, port_exc)
+
+                merge_web_risk_results(host, reports)
+
+            except Exception as exc:
+                logger.warning("Web risk scan failed for %s: %s", host.ip, exc)
+
+    # --- Vulnerability scanning ---
+    if args.vuln_scan:
+        logger.warning("VULNERABILITY SCANNING ENABLED - Ensure you have authorization")
+
+        from asmon.modules.orchestrator import ModuleOrchestrator
+        from asmon.modules.crawler import WebCrawler, form_to_url
+
+        # Parse module list
+        modules_to_run = None
+        if args.vuln_modules:
+            modules_to_run = [m.strip() for m in args.vuln_modules.split(",")]
+
+        orchestrator = ModuleOrchestrator(
+            rate_limit=args.vuln_rate_limit,
+            timeout=args.vuln_timeout,
+            callback_url=args.callback_url,
+            show_warning=not args.vuln_skip_warning,
+        )
+
+        # Collect URLs to test
+        urls_to_test: list[str] = []
+
+        # Add manually specified URLs
+        if args.vuln_url:
+            urls_to_test.extend(args.vuln_url)
+            logger.info("Added %d manually specified URLs", len(args.vuln_url))
+
+        # Crawl to discover URLs with parameters
+        if args.vuln_crawl:
+            crawler = WebCrawler(
+                max_pages=args.vuln_crawl_pages,
+                max_depth=args.vuln_crawl_depth,
+                timeout=args.vuln_timeout,
+                rate_limit=args.vuln_rate_limit,
+            )
+
+            for host in hosts:
+                hostname = host.hostnames[0] if host.hostnames else None
+                base_url = f"https://{hostname or host.ip}"
+
+                logger.info("Crawling %s for injectable URLs...", base_url)
+                try:
+                    result = crawler.crawl(base_url)
+                    urls_to_test.extend(result.urls_with_params)
+
+                    # Convert forms to testable URLs
+                    for form in result.forms:
+                        form_url = form_to_url(form)
+                        if form_url:
+                            urls_to_test.append(form_url)
+
+                    logger.info("Discovered %d URLs with parameters, %d forms",
+                               len(result.urls_with_params), len(result.forms))
+                except Exception as crawl_exc:
+                    logger.warning("Crawl failed for %s: %s", base_url, crawl_exc)
+
+        # Deduplicate URLs
+        urls_to_test = list(set(urls_to_test))
+
+        if not urls_to_test:
+            logger.warning(
+                "No URLs with parameters found! Use --vuln-crawl to discover URLs, "
+                "or --vuln-url to specify URLs manually. "
+                "Example: --vuln-url 'http://example.com/page?id=1'"
+            )
+
+        logger.info("Testing %d URLs for vulnerabilities", len(urls_to_test))
+
+        # Run vuln scan on each URL
+        all_findings = []
+        for url in urls_to_test:
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(url)
+                host_ip = parsed.netloc.split(":")[0]
+
+                target_spec = {
+                    "host": host_ip,
+                    "port": parsed.port or (443 if parsed.scheme == "https" else 80),
+                    "url": url,
+                    "hostname": parsed.netloc.split(":")[0],
+                    "subdomains": [],
+                }
+
+                findings = orchestrator.run_modules(
+                    target_spec,
+                    modules=modules_to_run,
+                    skip_warning=True,
+                )
+                all_findings.extend(findings)
+
+            except Exception as exc:
+                logger.warning("Vulnerability scan failed for %s: %s", url, exc)
+
+        # Also run non-injection modules (ssl_analysis, subdomain_takeover, endpoint_discovery) on hosts
+        non_injection_modules = ["ssl_analysis", "subdomain_takeover", "endpoint_discovery"]
+        if not modules_to_run or any(m in non_injection_modules for m in (modules_to_run or [])):
+            logger.info("Running host-level security modules on %d hosts", len(hosts))
+
+        for host in hosts:
+            try:
+                hostname = host.hostnames[0] if host.hostnames else None
+                base_url = f"https://{hostname or host.ip}"
+
+                target_spec = {
+                    "host": host.ip,
+                    "port": 443,
+                    "url": base_url,
+                    "hostname": hostname,
+                    "subdomains": host.hostnames,
+                }
+
+                # Only run host-level modules here
+                host_modules = [m for m in (modules_to_run or non_injection_modules) if m in non_injection_modules]
+                if host_modules:
+                    findings = orchestrator.run_modules(
+                        target_spec,
+                        modules=host_modules,
+                        skip_warning=True,
+                    )
+                    all_findings.extend(findings)
+
+                # Store findings in host record
+                host.vuln_findings = [f.model_dump() for f in all_findings if f.host == host.ip]
+                host.vuln_scanned = True
+
+            except Exception as exc:
+                logger.warning("Host-level scan failed for %s: %s", host.ip, exc)
+
+        logger.info("Vulnerability scan complete: %d total findings", len(all_findings))
+
+    # --- Compute risk score ---
+    from asmon.scoring import compute_risk_score
+    risk_score = compute_risk_score(
+        Snapshot(
+            snapshot_id="temp",
+            target=args.target,
+            hosts=hosts,
+        )
+    )
+
     # --- Build snapshot ---
     snapshot = Snapshot(
         snapshot_id=str(uuid.uuid4()),
@@ -283,6 +579,9 @@ def main() -> int:
             "ips_discovered": len(discovered_ips),
         },
         active_scan_enabled=args.active,
+        web_risk_enabled=args.web_risk,
+        vuln_scan_enabled=args.vuln_scan,
+        risk_score=risk_score,
     )
 
     saved_path = store.save(snapshot)
@@ -292,55 +591,65 @@ def main() -> int:
     print(render_snapshot_summary(snapshot))
 
     # --- Diff phase ---
-    if not args.diff:
-        return 0
-
-    # Load baseline
-    if args.baseline:
-        baseline = store.get(args.baseline)
-        if not baseline:
-            logger.error("Baseline snapshot not found: %s", args.baseline)
-            return 2
-    else:
-        # Get the snapshot before the one we just saved
-        all_snaps = store.list_snapshots(args.target)
-        if len(all_snaps) < 2:
-            print("\n  No previous snapshot to diff against. Run again to establish a baseline.\n")
-            return 0
-        baseline = all_snaps[1]  # [0] is the one we just saved
-
-    diff = compute_diff(baseline, snapshot)
-    print(render_diff(diff, fmt=args.output))
-
-    # --- AI summary ---
-    if args.ai_summary:
-        if args.output == "json":
-            # In JSON mode, append AI analysis as a separate top-level block
-            import json
-            from asmon.analysis import analyse_diff
-            analysis = analyse_diff(
-                diff,
-                api_key=args.ai_key,
-                provider=args.ai_provider,
-                model=args.ai_model,
-            )
-            output = {
-                "diff": diff.model_dump(),
-                "ai_analysis": analysis.model_dump(),
-            }
-            print(json.dumps(output, indent=2, default=str))
+    exit_code = 0
+    if args.diff:
+        # Load baseline
+        if args.baseline:
+            baseline = store.get(args.baseline)
+            if not baseline:
+                logger.error("Baseline snapshot not found: %s", args.baseline)
+                return 2
         else:
-            from asmon.analysis import analyse_diff, render_analysis
-            analysis = analyse_diff(
-                diff,
-                api_key=args.ai_key,
-                provider=args.ai_provider,
-                model=args.ai_model,
-            )
-            print(render_analysis(analysis))
+            # Get the snapshot before the one we just saved
+            all_snaps = store.list_snapshots(args.target)
+            if len(all_snaps) < 2:
+                print("\n  No previous snapshot to diff against. Run again to establish a baseline.\n")
+            else:
+                baseline = all_snaps[1]  # [0] is the one we just saved
 
-    # Exit code: 1 if changes were detected
-    return 1 if diff.changes else 0
+                diff = compute_diff(baseline, snapshot)
+                print(render_diff(diff, fmt=args.output))
+
+                # --- AI summary ---
+                if args.ai_summary:
+                    if args.output == "json":
+                        # In JSON mode, append AI analysis as a separate top-level block
+                        import json
+                        from asmon.analysis import analyse_diff
+                        analysis = analyse_diff(
+                            diff,
+                            api_key=args.ai_key,
+                            provider=args.ai_provider,
+                            model=args.ai_model,
+                        )
+                        output = {
+                            "diff": diff.model_dump(),
+                            "ai_analysis": analysis.model_dump(),
+                        }
+                        print(json.dumps(output, indent=2, default=str))
+                    else:
+                        from asmon.analysis import analyse_diff, render_analysis
+                        analysis = analyse_diff(
+                            diff,
+                            api_key=args.ai_key,
+                            provider=args.ai_provider,
+                            model=args.ai_model,
+                        )
+                        print(render_analysis(analysis))
+
+                # Exit code: 1 if changes were detected
+                exit_code = 1 if diff.changes else 0
+
+    # --- Cleanup phase (after all output) ---
+    if args.clean:
+        try:
+            if saved_path.exists():
+                saved_path.unlink()
+                logger.info("Cleaned up snapshot: %s", saved_path)
+        except Exception as exc:
+            logger.warning("Failed to clean up snapshot: %s", exc)
+
+    return exit_code
 
 
 # ---------------------------------------------------------------------------

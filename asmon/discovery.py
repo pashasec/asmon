@@ -48,12 +48,32 @@ class PassiveDiscovery:
           - "*.example.com"
 
         Returns a structured dict with subdomains and resolved IPs.
+
+        IMPORTANT: If passive discovery (crt.sh) returns no subdomains,
+        we always resolve and include the root domain IP. This ensures
+        single-host targets still flow through the full pipeline.
         """
         domain = self._extract_domain(target)
         logger.info("Passive discovery started for: %s", domain)
 
         subdomains = self._crt_sh_lookup(domain)
+
+        # CRITICAL FIX: Always include the root domain in the set.
+        # This ensures we get at least one IP even when crt.sh returns nothing.
+        subdomains.add(domain)
+
         resolved = self._resolve_all(subdomains)
+
+        # FALLBACK: If no subdomains resolved but we have a valid domain,
+        # make one last attempt to resolve the root domain directly.
+        if not resolved:
+            logger.warning("No subdomains resolved. Attempting direct root domain resolution.")
+            root_ips = self._resolve(domain)
+            if root_ips:
+                resolved[domain] = root_ips
+                logger.info("Root domain %s resolved to: %s", domain, root_ips)
+            else:
+                logger.warning("Could not resolve root domain %s", domain)
 
         result = {
             "root_domain": domain,

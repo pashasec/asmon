@@ -68,6 +68,7 @@ def compute_diff(baseline: Snapshot, current: Snapshot) -> SurfaceDiff:
         changes.extend(_diff_services(ip, baseline_hosts[ip].services, current_hosts[ip].services))
         changes.extend(_diff_host_meta(ip, baseline_hosts[ip], current_hosts[ip]))
         changes.extend(_diff_cves(ip, baseline_hosts[ip], current_hosts[ip]))
+        changes.extend(_diff_web_risks(ip, baseline_hosts[ip], current_hosts[ip]))
 
     diff = SurfaceDiff(
         target=current.target,
@@ -234,6 +235,58 @@ def _diff_cves(ip: str, old: HostRecord, new: HostRecord) -> list[AssetChange]:
             ip=ip,
             detail=f"CVE fixed: {cve_id} (no longer detected)",
             old=cve.model_dump(),
+            severity="info",
+        ))
+
+    return changes
+
+
+# ---------------------------------------------------------------------------
+# Web risk comparison
+# ---------------------------------------------------------------------------
+
+def _diff_web_risks(ip: str, old: HostRecord, new: HostRecord) -> list[AssetChange]:
+    """Compare web risk signals between baseline and current host."""
+    changes: list[AssetChange] = []
+
+    # Build sets of unique signal identifiers
+    def _signal_key(signal):
+        return (signal.signal_type, signal.title, signal.endpoint or "")
+
+    old_signals = {}
+    for report in old.web_risks:
+        for signal in report.signals:
+            old_signals[_signal_key(signal)] = signal
+
+    new_signals = {}
+    for report in new.web_risks:
+        for signal in report.signals:
+            new_signals[_signal_key(signal)] = signal
+
+    old_keys = set(old_signals.keys())
+    new_keys = set(new_signals.keys())
+
+    # New web risk signals
+    for key in sorted(new_keys - old_keys):
+        signal = new_signals[key]
+        changes.append(AssetChange(
+            change_type="added",
+            entity_type="web_risk",
+            ip=ip,
+            detail=f"New web risk: {signal.title} — {signal.detail[:60]}",
+            new=signal.model_dump(),
+            severity=signal.severity,
+        ))
+
+    # Resolved web risk signals (no longer detected)
+    for key in sorted(old_keys - new_keys):
+        signal = old_signals[key]
+        changes.append(AssetChange(
+            change_type="removed",
+            entity_type="web_risk",
+            ip=ip,
+            detail=f"Web risk resolved: {signal.title}",
+            old=signal.model_dump(),
             severity="info",
         ))
 
