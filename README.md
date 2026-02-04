@@ -181,6 +181,17 @@ pip install -r requirements.txt
 
 # Optional: Install AI summary dependencies
 pip install -r requirements-ai.txt
+
+# Create venv
+python3 -m venv venv
+
+source venv/bin/activate 
+
+# Install deps
+pip install requests shodan pydantic
+
+# Run
+python -m asmon.asmon --help
 ```
 
 ---
