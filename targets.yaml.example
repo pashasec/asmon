@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------------------
+# ASMON — Multi-target configuration
+# ---------------------------------------------------------------------------
+# Copy this file to targets.yaml and edit to match your environment.
+#
+# Usage:
+#   python -m asmon.asmon --targets targets.yaml
+#   python -m asmon.asmon --targets targets.yaml --diff
+#   python -m asmon.asmon --targets targets.yaml --diff --slack-webhook $URL
+#
+# Each target inherits global defaults unless overridden.
+# ---------------------------------------------------------------------------
+
+# Global defaults (applied to every target unless overridden)
+defaults:
+  shodan: false
+  active: false
+  web_risk: false
+  vuln_scan: false
+  diff: true
+
+# Targets to monitor
+targets:
+  - domain: example.com
+    label: "Example Corp - Main"       # friendly name for reports/alerts
+    # tags: [production, critical]     # optional grouping tags
+
+  - domain: scanme.nmap.org
+    label: "Nmap Test Host"
+    # tags: [test]
+
+  # Override defaults per target:
+  # - domain: myapp.com
+  #   label: "My Application"
+  #   shodan: true
+  #   web_risk: true
+  #   tags: [production, web]

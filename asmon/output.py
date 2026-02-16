@@ -56,13 +56,13 @@ def _render_diff_text(diff: SurfaceDiff) -> str:
     lines: list[str] = []
 
     # Header
-    lines.append(f"\n{C.BOLD}{'─' * 70}{C.RESET}")
-    lines.append(f"{C.BOLD}Attack Surface Diff — {diff.target}{C.RESET}")
+    lines.append(f"\n{C.BOLD}{'-' * 70}{C.RESET}")
+    lines.append(f"{C.BOLD}Attack Surface Diff -- {diff.target}{C.RESET}")
     lines.append(f"{C.DIM}Baseline: {diff.baseline_captured_at.strftime('%Y-%m-%d %H:%M UTC')}  "
                  f"({diff.baseline_id[:8]}){C.RESET}")
     lines.append(f"{C.DIM}Current:  {diff.current_captured_at.strftime('%Y-%m-%d %H:%M UTC')}  "
                  f"({diff.current_id[:8]}){C.RESET}")
-    lines.append(f"{C.BOLD}{'─' * 70}{C.RESET}\n")
+    lines.append(f"{C.BOLD}{'-' * 70}{C.RESET}\n")
 
     # Summary line
     summary_parts: list[str] = []
@@ -86,15 +86,15 @@ def _render_diff_text(diff: SurfaceDiff) -> str:
     high_cves = [c for c in diff.changes if c.entity_type == "cve" and c.severity == "high"]
 
     if critical_cves:
-        lines.append(f"  {C.RED}{C.BOLD}🚨 CRITICAL CVEs{C.RESET}")
+        lines.append(f"  {C.RED}{C.BOLD}[!!] CRITICAL CVEs{C.RESET}")
         for change in critical_cves:
-            lines.append(f"    {C.RED}•{C.RESET} {C.BOLD}{change.ip}{C.RESET}  {change.detail}")
+            lines.append(f"    {C.RED}*{C.RESET} {C.BOLD}{change.ip}{C.RESET}  {change.detail}")
         lines.append("")
 
     if high_cves:
-        lines.append(f"  {C.YELLOW}{C.BOLD}⚠️  HIGH CVEs{C.RESET}")
+        lines.append(f"  {C.YELLOW}{C.BOLD}[!] HIGH CVEs{C.RESET}")
         for change in high_cves:
-            lines.append(f"    {C.YELLOW}•{C.RESET} {C.BOLD}{change.ip}{C.RESET}  {change.detail}")
+            lines.append(f"    {C.YELLOW}*{C.RESET} {C.BOLD}{change.ip}{C.RESET}  {change.detail}")
         lines.append("")
 
     # Group by change_type for readability (excluding already-shown CVEs)
@@ -111,7 +111,7 @@ def _render_diff_text(diff: SurfaceDiff) -> str:
         for change in group:
             entity_tag = f"[{change.entity_type}]"
             port_suffix = f":{change.port}" if change.port else ""
-            lines.append(f"    {colour}•{C.RESET} {C.BOLD}{change.ip}{port_suffix}{C.RESET}  "
+            lines.append(f"    {colour}*{C.RESET} {C.BOLD}{change.ip}{port_suffix}{C.RESET}  "
                          f"{C.DIM}{entity_tag}{C.RESET}  {change.detail}")
         lines.append("")
 
@@ -120,7 +120,7 @@ def _render_diff_text(diff: SurfaceDiff) -> str:
     if other_cves:
         lines.append(f"  {C.DIM}[OTHER CVEs]{C.RESET}")
         for change in other_cves:
-            lines.append(f"    • {change.ip}  {change.detail}")
+            lines.append(f"    * {change.ip}  {change.detail}")
         lines.append("")
 
     # Show web risk changes
@@ -133,16 +133,16 @@ def _render_diff_text(diff: SurfaceDiff) -> str:
             lines.append(f"  {C.CYAN}{C.BOLD}[NEW WEB RISKS]{C.RESET}")
             for change in new_risks:
                 severity_color = C.RED if change.severity == "high" else (C.YELLOW if change.severity == "medium" else C.DIM)
-                lines.append(f"    {severity_color}•{C.RESET} {change.ip}  {change.detail}")
+                lines.append(f"    {severity_color}*{C.RESET} {change.ip}  {change.detail}")
             lines.append("")
 
         if resolved_risks:
             lines.append(f"  {C.GREEN}[RESOLVED WEB RISKS]{C.RESET}")
             for change in resolved_risks:
-                lines.append(f"    {C.GREEN}•{C.RESET} {change.ip}  {change.detail}")
+                lines.append(f"    {C.GREEN}*{C.RESET} {change.ip}  {change.detail}")
             lines.append("")
 
-    lines.append(f"{C.BOLD}{'─' * 70}{C.RESET}\n")
+    lines.append(f"{C.BOLD}{'-' * 70}{C.RESET}\n")
     return "\n".join(lines)
 
 
@@ -161,7 +161,7 @@ def render_snapshot_summary(snapshot: Snapshot) -> str:
 
     lines = [
         f"{C.BOLD}Snapshot {snapshot.snapshot_id[:8]}{C.RESET}  "
-        f"— {snapshot.target}  "
+        f"- {snapshot.target}  "
         f"@ {snapshot.captured_at.strftime('%Y-%m-%d %H:%M UTC')}",
         f"  Hosts: {host_count}  |  Services: {total_services}  |  "
         f"Unique ports: {len(unique_ports)}  ({', '.join(str(p) for p in sorted(unique_ports)[:15])})",
@@ -224,6 +224,6 @@ def render_snapshot_summary(snapshot: Snapshot) -> str:
         # Show top risk factors
         if score.factors:
             for factor in score.factors[:3]:
-                lines.append(f"    • {factor}")
+                lines.append(f"    * {factor}")
 
     return "\n".join(lines)

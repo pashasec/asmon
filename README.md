@@ -1,6 +1,6 @@
 # ASMON — Attack Surface Monitor
 
-A security research tool for passive attack surface discovery and change-detection. Discovers exposed assets via certificate transparency logs (crt.sh), enriches them with Shodan data, and diffs snapshots over time to surface new exposures and changes.
+A security research tool for passive attack surface discovery and change-detection. Discovers exposed assets via certificate transparency logs (crt.sh), enriches them with Shodan, InternetDB, CISA KEV, and EPSS data, and diffs snapshots over time to surface new exposures and changes. Includes a web dashboard for browser-based scanning, multi-target scheduling, Slack alerting, and downloadable HTML reports.
 
 **For educational and research purposes only.** This tool is designed for security professionals conducting authorized assessments on systems they own or have explicit written permission to test.
 
@@ -15,9 +15,15 @@ A security research tool for passive attack surface discovery and change-detecti
 3. **Analyzes web risk** passively — missing security headers, exposed endpoints, insecure cookies.
 4. **Scans actively** (when authorized) — port discovery, service fingerprinting, CVE correlation.
 5. **Tests for vulnerabilities** (when authorized) — SQL injection, XSS, RCE, path traversal, and more.
-6. **Snapshots** the current state to disk as structured JSON.
-7. **Diffs** the current snapshot against a previous one, detecting new assets, removed assets, and service changes.
-8. **Summarises** changes with an optional AI layer (OpenAI or Anthropic). AI output is clearly separated from raw data and explicitly marked advisory.
+6. **Enriches** with InternetDB (free, no API key), CISA KEV, and EPSS exploitation probability scores.
+7. **Checks DNS security** — SPF, DMARC, DNSSEC, CAA records.
+8. **Scores risk** with a hybrid engine (CVE severity + service exposure + web signals, 0-100).
+9. **Snapshots** the current state to disk as structured JSON.
+10. **Diffs** the current snapshot against a previous one, detecting new assets, removed assets, and service changes.
+11. **Summarises** changes with an optional AI layer (OpenAI or Anthropic). AI output is clearly separated from raw data and explicitly marked advisory.
+12. **Web dashboard** — scan from the browser, view results, download HTML reports.
+13. **Multi-target scheduling** — define targets in `targets.yaml`, run on cron intervals.
+14. **Slack alerting** — severity-filtered notifications with deduplication.
 
 ---
 
@@ -88,6 +94,27 @@ asmon/                           ← Python package
 ├── output.py                    ← rendering: text (terminal) and JSON
 ├── analysis.py                  ← optional LLM summarisation
 ├── scoring.py                   ← risk scoring engine
+├── internetdb.py                ← InternetDB enrichment (free, no key)
+├── cisa_kev.py                  ← CISA Known Exploited Vulnerabilities
+├── epss.py                      ← EPSS exploitation probability scores
+├── dns_security.py              ← DNS security checks (SPF, DMARC, DNSSEC, CAA)
+├── report.py                    ← HTML report generation
+├── targets.py                   ← Multi-target YAML config loader
+├── orchestrator.py              ← Automated scan pipeline orchestrator
+├── scheduler.py                 ← Cron-based scheduling engine
+│
+├── alerters/                    ← Alert notifications
+│   ├── slack.py                 ← Slack webhook integration
+│   ├── filters.py               ← Severity-based alert filtering
+│   ├── messages.py              ← Alert message formatting
+│   └── state.py                 ← Deduplication state tracking
+│
+├── dashboard/                   ← Web dashboard (FastAPI)
+│   ├── __main__.py              ← Standalone runner (python -m asmon.dashboard)
+│   ├── app.py                   ← API endpoints and scan worker
+│   └── static/                  ← Frontend (HTML/CSS/JS)
+│       ├── index.html           ← Main dashboard page
+│       └── detail.html          ← Scan detail page with scoring
 │
 ├── active/                      ← Active port scanning
 │   ├── scanner.py               ← Orchestrator
@@ -310,6 +337,62 @@ python -m asmon.asmon --target example.com --shodan --diff --baseline abc12345
 python -m asmon.asmon --target example.com --shodan --clean
 ```
 
+### 12. Web dashboard
+
+```bash
+# Start the web dashboard (default: http://localhost:8000)
+python -m asmon.asmon --dashboard
+
+# Custom host and port
+python -m asmon.asmon --dashboard --dashboard-host 0.0.0.0 --dashboard-port 9000
+
+# Or run standalone
+python -m asmon.dashboard
+```
+
+Open `http://localhost:8000` in a browser to scan targets, view results with risk scoring, and download HTML reports.
+
+### 13. Multi-target scheduling
+
+Define targets in `targets.yaml`:
+
+```yaml
+targets:
+  - domain: example.com
+    schedule: "*/30 * * * *"    # every 30 minutes
+    mode: passive
+  - domain: myapp.io
+    schedule: "0 */6 * * *"    # every 6 hours
+    mode: passive
+```
+
+```bash
+# Run the scheduler
+python -m asmon.asmon --scheduler
+
+# Or run the orchestrator for a single pass
+python -m asmon.asmon --orchestrate
+```
+
+### 14. Slack alerting
+
+```bash
+# Set your Slack webhook URL
+export ASMON_SLACK_WEBHOOK="https://hooks.slack.com/services/..."
+
+# Alerts are sent automatically when scans detect high/critical findings
+python -m asmon.asmon --target example.com --alert-slack
+```
+
+### 15. HTML report generation
+
+```bash
+# Generate a downloadable HTML report
+python -m asmon.asmon --target example.com --report html
+```
+
+Reports include risk scoring breakdown, CVE tables, service exposure, DNS security status, and step-by-step remediation instructions.
+
 ---
 
 ## CLI Reference
@@ -365,6 +448,14 @@ python -m asmon.asmon --target example.com --shodan --clean
 | `--vuln-skip-warning`  | Skip authorization confirmation prompt (for automation)          |
 | `--callback-url`       | OOB callback server URL for blind vulnerability detection        |
 
+### Dashboard
+
+| Flag                  | Description                                                      |
+|-----------------------|------------------------------------------------------------------|
+| `--dashboard`         | Start the web dashboard                                          |
+| `--dashboard-host`    | Bind address (default: `127.0.0.1`)                              |
+| `--dashboard-port`    | Port number (default: `8000`)                                    |
+
 ### Diff and Analysis
 
 | Flag               | Description                                                      |
@@ -374,7 +465,7 @@ python -m asmon.asmon --target example.com --shodan --clean
 | `--ai-summary`     | Generate AI-assisted summary of changes (requires `--diff`)      |
 | `--ai-key`         | AI provider API key (overrides env var)                          |
 | `--ai-provider`    | `openai` or `anthropic` (default: `openai`)                      |
-| `--ai-model`       | Model identifier (e.g. `gpt-4o-mini`, `claude-haiku-3`)          |
+| `--ai-model`       | Model identifier (e.g. `gpt-4o-mini`, `haiku-3`)                 |
 
 ---
 
@@ -480,8 +571,8 @@ Exit code 1 on changes is intentional — it lets you integrate this into CI/CD 
 - **Shodan data may be outdated.** Shodan's crawl index is not real-time. Recent changes won't be reflected immediately.
 - **Active scanning has rate limits.** Default 100 conn/sec. Reduce with `--active-rate-limit` if target rate-limits you.
 - **Vulnerability detection is heuristic.** Payloads are matched against response content. Obfuscation or WAF rules may cause false negatives.
-- **Single-target per run.** One `--target` per invocation. Loop externally if you monitor multiple targets.
-- **No alerting.** This tool detects and reports. Alerting (email, Slack, PagerDuty) is out of scope — wire it up using JSON output and exit codes.
+- **Multi-target support.** Define multiple targets in `targets.yaml` with individual schedules.
+- **Slack alerting.** Severity-filtered alerts with deduplication. Additional integrations (email, PagerDuty) can be added.
 - **No deduplication across targets.** If the same IP appears under two targets, it's stored independently.
 
 ---

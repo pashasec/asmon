@@ -1,0 +1,13 @@
+# ASMON multi-target test config
+defaults:
+  diff: true
+
+targets:
+  - domain: testphp.vulnweb.com
+    label: "Acunetix Test Site"
+
+  - domain: scanme.nmap.org
+    label: "Nmap Test Host"
+
+  - domain: example.com
+    label: "Example Corp"
