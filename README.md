@@ -235,6 +235,10 @@ pip install requests shodan pydantic
 
 # Run
 python -m asmon.asmon --help
+
+# Web Interface
+python -m asmon.asmon --dashboard
+
 ```
 
 ---
