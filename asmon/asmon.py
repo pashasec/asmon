@@ -58,8 +58,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # --- Required context ---
-    parser.add_argument("--target", required=True,
+    parser.add_argument("--target", default=None,
                         help="Domain, URL, or organisation name to monitor.")
+    parser.add_argument("--targets", default=None,
+                        help="Path to targets.yaml for multi-target scanning. "
+                             "Overrides --target.")
 
     # --- Mode ---
     parser.add_argument("--mode", choices=["passive"], default="passive",
@@ -90,6 +93,8 @@ def build_parser() -> argparse.ArgumentParser:
     # --- Output ---
     parser.add_argument("--output", choices=["text", "json"], default="text",
                         help="Output format.")
+    parser.add_argument("--report", choices=["html", "pdf"], default=None,
+                        help="Generate an HTML or PDF report after scanning.")
 
     # --- Listing ---
     parser.add_argument("--list", action="store_true",
@@ -217,6 +222,88 @@ def build_parser() -> argparse.ArgumentParser:
         help="Maximum pages to crawl. Default: 50"
     )
 
+    # --- Slack Alerting ---
+    alert_group = parser.add_argument_group(
+        "slack alerting",
+        "Send change notifications to Slack. "
+        "Alerts are filtered to meaningful changes and deduplicated automatically."
+    )
+    alert_group.add_argument(
+        "--slack-webhook",
+        default=None,
+        help="Slack incoming webhook URL. Requires --diff. "
+             "Env var: ASMON_SLACK_WEBHOOK."
+    )
+
+    # --- Scheduling ---
+    sched_group = parser.add_argument_group(
+        "scheduling",
+        "Run scans repeatedly on a fixed interval. "
+        "Ctrl+C stops gracefully after the current cycle."
+    )
+    sched_group.add_argument(
+        "--schedule",
+        type=int,
+        default=None,
+        metavar="MINUTES",
+        help="Re-run the scan every N minutes (e.g. --schedule 360 for every 6 hours)."
+    )
+    sched_group.add_argument(
+        "--max-cycles",
+        type=int,
+        default=0,
+        help="Stop after N cycles (default: 0 = unlimited)."
+    )
+
+    # --- Retention ---
+    retain_group = parser.add_argument_group(
+        "snapshot retention",
+        "Automatically clean up old snapshots to save disk space. "
+        "Runs after each scan completes."
+    )
+    retain_group.add_argument(
+        "--retain",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Keep only the N most recent snapshots per target (0 = unlimited)."
+    )
+    retain_group.add_argument(
+        "--retain-days",
+        type=int,
+        default=0,
+        metavar="DAYS",
+        help="Delete snapshots older than N days (0 = unlimited). "
+             "The most recent snapshot is always kept."
+    )
+    retain_group.add_argument(
+        "--storage-info",
+        action="store_true",
+        help="Show snapshot storage usage and exit."
+    )
+
+    # --- Dashboard ---
+    dash_group = parser.add_argument_group(
+        "web dashboard",
+        "Launch the ASMON web UI. No login required."
+    )
+    dash_group.add_argument(
+        "--dashboard",
+        action="store_true",
+        help="Start the web dashboard on http://localhost:8000"
+    )
+    dash_group.add_argument(
+        "--dashboard-host",
+        default="0.0.0.0",
+        help="Dashboard bind address. Default: 0.0.0.0"
+    )
+    dash_group.add_argument(
+        "--dashboard-port",
+        type=int,
+        default=8000,
+        help="Dashboard port. Default: 8000"
+    )
+
     # --- Misc ---
     parser.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                         default=None, help="Override log level.")
@@ -285,12 +372,89 @@ def main() -> int:
     setup_logging(args.log_level)
     logger = logging.getLogger("asmon")
 
+    # --- Dashboard mode (early exit) ---
+    if args.dashboard:
+        try:
+            import uvicorn
+            from asmon.dashboard.app import app
+        except ImportError as exc:
+            logger.error("Dashboard requires: pip install fastapi uvicorn[standard]")
+            return 2
+        print(f"\n  ASMON Dashboard: http://localhost:{args.dashboard_port}\n")
+        uvicorn.run(app, host=args.dashboard_host, port=args.dashboard_port)
+        return 0
+
+    # --- Storage info (early exit) ---
+    if args.storage_info:
+        store = SnapshotStore(config.SNAPSHOT_DIR)
+        usage = store.disk_usage()
+        print(f"\n  Snapshot storage: {config.SNAPSHOT_DIR}")
+        print(f"  Files: {usage['total_files']}  |  Size: {usage['total_mb']} MB  |  Targets: {usage['targets']}")
+        for target in store.list_targets():
+            count = len(list(config.SNAPSHOT_DIR.glob(f"{store._safe_target_name(target)}_*.json")))
+            print(f"    {target}: {count} snapshot(s)")
+        print()
+        return 0
+
+    # --- Multi-target mode (early branch) ---
+    if args.targets:
+        from asmon.targets import load_targets
+        from asmon.orchestrator import run_targets
+        import os
+
+        try:
+            target_configs = load_targets(args.targets)
+        except (FileNotFoundError, ValueError, ImportError) as exc:
+            logger.error(str(exc))
+            return 2
+
+        slack_webhook = getattr(args, 'slack_webhook', None) or os.environ.get("ASMON_SLACK_WEBHOOK")
+
+        def _multi_scan() -> int:
+            results = run_targets(
+                target_configs,
+                slack_webhook=slack_webhook,
+                output_fmt=args.output,
+                report_fmt=args.report,
+                retain=args.retain,
+                retain_days=args.retain_days,
+            )
+            has_changes = any(r.diff and r.diff.changes for r in results)
+            has_errors = any(r.error for r in results)
+            if has_errors:
+                return 3
+            return 1 if has_changes else 0
+
+        # Wrap in scheduler if --schedule is set
+        if args.schedule:
+            from asmon.scheduler import run_scheduled
+            return run_scheduled(_multi_scan, args.schedule, args.max_cycles)
+
+        return _multi_scan()
+
+    # --- Single-target mode (original flow) ---
+    if not args.target:
+        parser.error("--target or --targets is required")
+
     # Storage
     store = SnapshotStore(config.SNAPSHOT_DIR)
 
     # --- --list mode (early exit) ---
     if args.list:
         return _handle_list(store, args.target)
+
+    # --- Schedule wrapper for single-target mode ---
+    if args.schedule:
+        from asmon.scheduler import run_scheduled
+        def _single_scan() -> int:
+            return _run_single_scan(args, store)
+        return run_scheduled(_single_scan, args.schedule, args.max_cycles)
+
+    return _run_single_scan(args, store)
+
+
+def _run_single_scan(args, store) -> int:
+    """Run one full single-target scan cycle. Extracted for scheduler reuse."""
 
     # --- Discovery phase ---
     logger.info("Starting scan for target: %s", args.target)
@@ -360,6 +524,83 @@ def main() -> int:
     else:
         logger.info("Shodan not enabled. Creating records from passive discovery.")
         hosts = [_create_basic_host(ip, ip_to_hostnames.get(ip, [])) for ip in discovered_ips]
+
+    # --- InternetDB enrichment (free, always-on) ---
+    if hosts:
+        from asmon.internetdb import InternetDBClient
+        try:
+            idb = InternetDBClient()
+            idb_stats = idb.enrich_hosts(hosts)
+            logger.info(
+                "InternetDB: +%d ports, +%d CVEs across %d/%d hosts",
+                idb_stats["new_ports_added"],
+                idb_stats["new_cves_added"],
+                idb_stats["enriched"],
+                idb_stats["queried"],
+            )
+        except Exception as exc:
+            logger.warning("InternetDB enrichment failed (non-fatal): %s", exc)
+
+    # --- CISA KEV enrichment (free, always-on) ---
+    # Cross-references CVEs with actively exploited vulnerabilities catalog
+    has_cves = any(len(h.cves) > 0 for h in hosts)
+    if hosts and has_cves:
+        from asmon.cisa_kev import CISAKEVClient
+        try:
+            kev = CISAKEVClient()
+            kev_stats = kev.enrich_hosts(hosts)
+            if kev_stats["kev_matches"] > 0:
+                logger.warning(
+                    "CISA KEV: %d CVE(s) are ACTIVELY EXPLOITED in the wild!",
+                    kev_stats["kev_matches"],
+                )
+            if kev_stats["ransomware_linked"] > 0:
+                logger.warning(
+                    "CISA KEV: %d CVE(s) linked to RANSOMWARE campaigns!",
+                    kev_stats["ransomware_linked"],
+                )
+        except Exception as exc:
+            logger.warning("CISA KEV enrichment failed (non-fatal): %s", exc)
+
+    # --- EPSS enrichment (free, always-on) ---
+    # Adds exploitation probability scores to CVEs
+    has_cves = any(len(h.cves) > 0 for h in hosts)
+    if hosts and has_cves:
+        from asmon.epss import EPSSClient
+        try:
+            epss = EPSSClient()
+            epss_stats = epss.enrich_hosts(hosts)
+            if epss_stats["high_risk_cves"] > 0:
+                logger.warning(
+                    "EPSS: %d CVE(s) have >=70%% exploitation probability in next 30 days",
+                    epss_stats["high_risk_cves"],
+                )
+        except Exception as exc:
+            logger.warning("EPSS enrichment failed (non-fatal): %s", exc)
+
+    # --- DNS security checks (free, always-on) ---
+    # Checks SPF, DMARC, DNSSEC, CAA records on the root domain
+    if hosts:
+        from asmon.dns_security import DNSSecurityChecker
+        try:
+            dns_checker = DNSSecurityChecker()
+            root_domain = disc_results["root_domain"]
+            dns_signals = dns_checker.check(root_domain)
+            if dns_signals:
+                logger.info("DNS security: %d finding(s) for %s", len(dns_signals), root_domain)
+                # Attach DNS findings to the first host as web risk signals
+                from asmon.models import WebRiskReport
+                dns_report = WebRiskReport(
+                    host=root_domain,
+                    port=53,
+                    url=f"dns://{root_domain}",
+                    signals=dns_signals,
+                    http_accessible=False,
+                    https_accessible=False,
+                )
+                hosts[0].web_risks.append(dns_report)
+        except Exception as exc:
+            logger.warning("DNS security check failed (non-fatal): %s", exc)
 
     # --- Active scanning (NEW) ---
     if args.active:
@@ -592,6 +833,7 @@ def main() -> int:
 
     # --- Diff phase ---
     exit_code = 0
+    diff_result = None
     if args.diff:
         # Load baseline
         if args.baseline:
@@ -608,7 +850,23 @@ def main() -> int:
                 baseline = all_snaps[1]  # [0] is the one we just saved
 
                 diff = compute_diff(baseline, snapshot)
+                diff_result = diff
                 print(render_diff(diff, fmt=args.output))
+
+                # --- Slack alerting ---
+                import os
+                slack_webhook = getattr(args, 'slack_webhook', None) or os.environ.get("ASMON_SLACK_WEBHOOK")
+                if slack_webhook and diff.changes:
+                    try:
+                        from asmon.alerters.slack import SlackAlerter
+                        alerter = SlackAlerter(webhook_url=slack_webhook)
+                        alerter.send(
+                            diff=diff,
+                            snapshot_id=snapshot.snapshot_id,
+                            baseline_id=baseline.snapshot_id,
+                        )
+                    except Exception as exc:
+                        logger.warning("Slack alerting failed (non-fatal): %s", exc)
 
                 # --- AI summary ---
                 if args.ai_summary:
@@ -639,6 +897,26 @@ def main() -> int:
 
                 # Exit code: 1 if changes were detected
                 exit_code = 1 if diff.changes else 0
+
+    # --- Report generation ---
+    if args.report:
+        from asmon.report import save_html_report, save_pdf_report
+        try:
+            if args.report == "pdf":
+                report_path = save_pdf_report(snapshot, diff=diff_result)
+            else:
+                report_path = save_html_report(snapshot, diff=diff_result)
+            print(f"\n  Report saved: {report_path}\n")
+        except Exception as exc:
+            logger.warning("Report generation failed: %s", exc)
+
+    # --- Retention policy ---
+    if args.retain > 0 or args.retain_days > 0:
+        deleted = store.enforce_retention(
+            args.target, keep=args.retain, max_age_days=args.retain_days,
+        )
+        if deleted > 0:
+            print(f"  Retention: cleaned up {deleted} old snapshot(s)")
 
     # --- Cleanup phase (after all output) ---
     if args.clean:

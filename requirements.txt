@@ -6,6 +6,10 @@
 pydantic>=2.0
 requests>=2.28
 shodan>=1.30
+dnspython>=2.4
+pyyaml>=6.0
+fastapi>=0.104
+uvicorn[standard]>=0.24
 
 # AI (optional — only if you use --ai-summary)
 # Install with: pip install -r requirements.txt -r requirements-ai.txt

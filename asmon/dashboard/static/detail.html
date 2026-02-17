@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASMON - Scan Details</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            background: #0a0e17;
+            color: #c9d1d9;
+            min-height: 100vh;
+        }
+
+        /* --- Header --- */
+        .header {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 {
+            font-size: 20px;
+            color: #58a6ff;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .header a {
+            color: #8b949e;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .header a:hover { color: #58a6ff; }
+
+        /* --- Container --- */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* --- Loading --- */
+        .loading {
+            text-align: center;
+            padding: 80px 0;
+            color: #8b949e;
+            font-size: 16px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #30363d;
+            border-top: 3px solid #58a6ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- Target header --- */
+        .target-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .target-header h2 {
+            font-size: 24px;
+            color: #e6edf3;
+        }
+        .target-header .meta {
+            color: #8b949e;
+            font-size: 13px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        .btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #238636;
+            color: #fff;
+            border-color: #238636;
+        }
+        .btn-primary:hover { background: #2ea043; }
+        .btn-secondary {
+            background: #21262d;
+            color: #c9d1d9;
+        }
+        .btn-secondary:hover { background: #30363d; }
+
+        /* --- Risk score card --- */
+        .risk-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        .risk-score-circle {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .risk-critical { background: #da3633; color: #fff; }
+        .risk-high { background: #d29922; color: #0a0e17; }
+        .risk-medium { background: #e3b341; color: #0a0e17; }
+        .risk-low { background: #238636; color: #fff; }
+        .risk-info { background: #30363d; color: #8b949e; }
+
+        .risk-details h3 { font-size: 18px; color: #e6edf3; margin-bottom: 6px; }
+        .risk-details p { color: #8b949e; font-size: 13px; line-height: 1.5; }
+
+        /* --- Score breakdown --- */
+        .score-breakdown {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .score-component {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+        }
+        .score-component .score-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #e6edf3;
+        }
+        .score-component .score-max {
+            font-size: 14px;
+            color: #484f58;
+        }
+        .score-component .score-label {
+            font-size: 12px;
+            color: #8b949e;
+            margin-top: 4px;
+        }
+        .score-bar {
+            height: 4px;
+            background: #21262d;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+        .bar-cve { background: #da3633; }
+        .bar-service { background: #d29922; }
+        .bar-web { background: #58a6ff; }
+
+        /* --- Stats row --- */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 14px;
+            text-align: center;
+        }
+        .stat-card .number {
+            font-size: 22px;
+            font-weight: 700;
+            color: #e6edf3;
+        }
+        .stat-card .label {
+            font-size: 11px;
+            color: #8b949e;
+            margin-top: 4px;
+        }
+
+        /* --- Risk factors --- */
+        .factors-list {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .factors-list h4 {
+            font-size: 13px;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        .factor-item {
+            padding: 6px 0;
+            font-size: 13px;
+            color: #c9d1d9;
+            border-bottom: 1px solid #21262d;
+        }
+        .factor-item:last-child { border-bottom: none; }
+        .factor-item::before {
+            content: "!";
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            background: #d29922;
+            color: #0a0e17;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+
+        /* --- Section title --- */
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e6edf3;
+            margin: 28px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #21262d;
+        }
+
+        /* --- Tables --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 13px;
+            border-bottom: 1px solid #21262d;
+        }
+        th {
+            background: #0d1117;
+            color: #8b949e;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        td { color: #c9d1d9; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #1c2128; }
+
+        /* --- Badges --- */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-critical { background: #da3633; color: #fff; }
+        .badge-high { background: #d29922; color: #0a0e17; }
+        .badge-medium { background: #e3b341; color: #0a0e17; }
+        .badge-low { background: #238636; color: #fff; }
+        .badge-info { background: #30363d; color: #8b949e; }
+
+        /* --- Host cards --- */
+        .host-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+        }
+        .host-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .host-ip {
+            font-family: monospace;
+            font-size: 16px;
+            color: #e6edf3;
+            font-weight: 600;
+        }
+        .host-hostnames {
+            color: #8b949e;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .host-badges { display: flex; gap: 6px; }
+        .host-services-table {
+            width: 100%;
+            border: none;
+            background: transparent;
+            margin: 0;
+        }
+        .host-services-table th {
+            background: #0d1117;
+            font-size: 10px;
+        }
+        .host-services-table td {
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+
+        /* --- Signal items --- */
+        .signal-item {
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 4px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+        }
+        .signal-item .signal-title {
+            font-weight: 600;
+            color: #e6edf3;
+            font-size: 13px;
+        }
+        .signal-item .signal-detail {
+            color: #8b949e;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+        .signal-item .signal-rec {
+            color: #58a6ff;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        /* --- Check table (what exists, what doesn't) --- */
+        .check-table td:first-child {
+            font-weight: 600;
+            width: 200px;
+        }
+        .check-yes { color: #3fb950; }
+        .check-no { color: #f85149; }
+        .check-na { color: #484f58; }
+
+        /* --- Summary box --- */
+        .summary-box {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            line-height: 1.7;
+            font-size: 14px;
+            color: #c9d1d9;
+        }
+        .summary-box strong { color: #e6edf3; }
+
+        /* --- Recommendations --- */
+        .rec-list {
+            margin-bottom: 24px;
+        }
+        .rec-item {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        .rec-priority {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .rec-priority-critical { background: #da3633; }
+        .rec-priority-high { background: #d29922; }
+        .rec-priority-medium { background: #e3b341; color: #0a0e17; }
+        .rec-priority-low { background: #238636; }
+        .rec-priority-info { background: #30363d; }
+        .rec-content { flex: 1; }
+        .rec-content .rec-title {
+            font-weight: 600;
+            color: #e6edf3;
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+        .rec-content .rec-desc {
+            color: #8b949e;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .rec-steps {
+            margin-top: 8px;
+            padding: 0;
+            list-style: none;
+            counter-reset: step-counter;
+        }
+        .rec-steps li {
+            counter-increment: step-counter;
+            padding: 5px 0 5px 28px;
+            position: relative;
+            font-size: 13px;
+            color: #c9d1d9;
+            border-bottom: 1px solid #21262d;
+        }
+        .rec-steps li:last-child { border-bottom: none; }
+        .rec-steps li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            background: #21262d;
+            color: #58a6ff;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .rec-steps code {
+            background: #0d1117;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #e6edf3;
+        }
+
+        /* --- Footer --- */
+        .footer {
+            text-align: center;
+            padding: 24px;
+            color: #484f58;
+            font-size: 12px;
+            border-top: 1px solid #21262d;
+            margin-top: 40px;
+        }
+
+        /* --- Error --- */
+        .error-msg {
+            background: #2d1b1b;
+            border: 1px solid #da3633;
+            color: #f85149;
+            padding: 16px;
+            border-radius: 6px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/">
+            <h1>🎯 ASMON</h1>
+        </a>
+        <a href="/">← Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div class="loading" id="loading">
+            <span class="spinner"></span> Loading scan details...
+        </div>
+
+        <div id="content" style="display:none">
+            <!-- Target header + download -->
+            <div class="target-header">
+                <div>
+                    <h2 id="targetName"></h2>
+                    <div class="meta" id="scanMeta"></div>
+                </div>
+                <div class="btn-group">
+                    <a class="btn btn-primary" id="downloadBtn">⬇ Download Report</a>
+                    <a class="btn btn-secondary" href="/">🔍 New Scan</a>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary-box" id="summaryBox"></div>
+
+            <!-- Risk score -->
+            <div class="risk-card" id="riskCard"></div>
+
+            <!-- Score breakdown -->
+            <div class="score-breakdown" id="scoreBreakdown"></div>
+
+            <!-- Stats -->
+            <div class="stats-row" id="statsRow"></div>
+
+            <!-- Risk factors -->
+            <div id="factorsSection"></div>
+
+            <!-- Security checks (what exists / what doesn't) -->
+            <div id="checksSection"></div>
+
+            <!-- Hosts -->
+            <h3 class="section-title">💻 Discovered Hosts</h3>
+            <div id="hostsSection"></div>
+
+            <!-- CVEs -->
+            <div id="cvesSection"></div>
+
+            <!-- Security signals -->
+            <div id="signalsSection"></div>
+
+            <!-- Recommendations -->
+            <div id="recsSection"></div>
+        </div>
+
+        <div class="error-msg" id="errorMsg" style="display:none"></div>
+    </div>
+
+    <div class="footer">ASMON - Attack Surface Monitor | </div>
+
+    <script>
+        const snapshotId = window.location.pathname.split('/detail/')[1];
+
+        if (!snapshotId) {
+            showError('No snapshot ID provided');
+        } else {
+            loadSnapshot(snapshotId);
+        }
+
+        async function loadSnapshot(id) {
+            try {
+                const resp = await fetch(`/api/snapshot/${id}`);
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Failed to load snapshot');
+                }
+                const snap = await resp.json();
+                render(snap);
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        function render(snap) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = '';
+
+            // Title
+            document.getElementById('targetName').textContent = '🎯 ' + snap.target;
+            document.getElementById('scanMeta').textContent =
+                `Scanned: ${new Date(snap.captured_at).toLocaleString()} | ID: ${snap.snapshot_id.slice(0, 8)}`;
+            document.title = `ASMON - ${snap.target}`;
+
+            // Download button
+            document.getElementById('downloadBtn').href = `/api/report/${snap.snapshot_id}`;
+
+            const risk = snap.risk_score || { score: 0, level: 'info', factors: [],
+                cve_score: 0, service_score: 0, web_risk_score: 0,
+                cve_count: 0, critical_cve_count: 0, high_cve_count: 0,
+                exposed_service_count: 0, web_signal_count: 0, high_web_signal_count: 0 };
+
+            // Risk card
+            const levelEmoji = { critical: '🔴', high: '🟡', medium: '🟡', low: '🟢', info: '⚪' }[risk.level] || '⚪';
+            document.getElementById('riskCard').innerHTML = `
+                <div class="risk-score-circle risk-${risk.level}">${risk.score}</div>
+                <div class="risk-details">
+                    <h3>${levelEmoji} ${risk.level.toUpperCase()} Risk</h3>
+                    <p>Combined score from CVE severity (${risk.cve_score}/60), service exposure (${risk.service_score}/30), and web risk signals (${risk.web_risk_score}/40).</p>
+                </div>
+            `;
+
+            // Score breakdown bars
+            document.getElementById('scoreBreakdown').innerHTML = `
+                <div class="score-component">
+                    <div class="score-value">${risk.cve_score}<span class="score-max">/60</span></div>
+                    <div class="score-label">⚠️ CVE Score</div>
+                    <div class="score-bar"><div class="score-bar-fill bar-cve" style="width:${(risk.cve_score / 60 * 100).toFixed(0)}%"></div></div>
+                </div>
+                <div class="score-component">
+                    <div class="score-value">${risk.service_score}<span class="score-max">/30</span></div>
+                    <div class="score-label">⚙️ Service Exposure</div>
+                    <div class="score-bar"><div class="score-bar-fill bar-service" style="width:${(risk.service_score / 30 * 100).toFixed(0)}%"></div></div>
+                </div>
+                <div class="score-component">
+                    <div class="score-value">${risk.web_risk_score}<span class="score-max">/40</span></div>
+                    <div class="score-label">🔒 Web Risk Signals</div>
+                    <div class="score-bar"><div class="score-bar-fill bar-web" style="width:${(risk.web_risk_score / 40 * 100).toFixed(0)}%"></div></div>
+                </div>
+            `;
+
+            // Stats
+            const totalCves = snap.hosts.reduce((s, h) => s + (h.cves ? h.cves.length : 0), 0);
+            const totalPorts = snap.hosts.reduce((s, h) => s + (h.services ? h.services.length : 0), 0);
+            const totalSignals = snap.hosts.reduce((s, h) =>
+                s + (h.web_risks ? h.web_risks.reduce((ss, r) => ss + (r.signals ? r.signals.length : 0), 0) : 0), 0);
+
+            document.getElementById('statsRow').innerHTML = `
+                <div class="stat-card"><div class="number">${snap.hosts.length}</div><div class="label">💻 Hosts</div></div>
+                <div class="stat-card"><div class="number">${totalPorts}</div><div class="label">⚙️ Open Ports</div></div>
+                <div class="stat-card"><div class="number">${totalCves}</div><div class="label">⚠️ Total CVEs</div></div>
+                <div class="stat-card"><div class="number">${risk.critical_cve_count}</div><div class="label">🔴 Critical CVEs</div></div>
+                <div class="stat-card"><div class="number">${risk.high_cve_count}</div><div class="label">🟡 High CVEs</div></div>
+                <div class="stat-card"><div class="number">${totalSignals}</div><div class="label">🔔 Risk Signals</div></div>
+            `;
+
+            // Risk factors
+            const factorsEl = document.getElementById('factorsSection');
+            if (risk.factors && risk.factors.length > 0) {
+                factorsEl.innerHTML = `
+                    <div class="factors-list">
+                        <h4>🚨 Risk Factors</h4>
+                        ${risk.factors.map(f => `<div class="factor-item">${esc(f)}</div>`).join('')}
+                    </div>
+                `;
+            }
+
+            // Summary text
+            renderSummary(snap, risk, totalCves, totalPorts, totalSignals);
+
+            // Security checks table (what exists / what doesn't)
+            renderSecurityChecks(snap);
+
+            // Hosts
+            renderHosts(snap.hosts);
+
+            // CVEs
+            renderCves(snap.hosts);
+
+            // Signals
+            renderSignals(snap.hosts);
+
+            // Recommendations
+            renderRecommendations(snap, risk, totalCves, totalPorts, totalSignals);
+        }
+
+        function renderSummary(snap, risk, totalCves, totalPorts, totalSignals) {
+            const hostCount = snap.hosts.length;
+            const scanDate = new Date(snap.captured_at).toLocaleDateString();
+            const scanTime = new Date(snap.captured_at).toLocaleTimeString();
+
+            // Collect data for a detailed explanation
+            const allSignals = [];
+            for (const h of snap.hosts) {
+                for (const wr of (h.web_risks || [])) {
+                    for (const sig of (wr.signals || [])) {
+                        allSignals.push({ ...sig, host: wr.host });
+                    }
+                }
+            }
+            const missingDns = allSignals.filter(s =>
+                s.signal_type === 'dns_missing_record' ||
+                (s.title && ['SPF','DMARC','DNSSEC','CAA'].some(k => s.title.includes(k)) && s.severity !== 'info')
+            );
+            const missingHeaders = allSignals.filter(s => s.signal_type === 'missing_header');
+
+            let html = `<strong>🔎 What happened:</strong> ASMON performed a passive scan on <strong>${esc(snap.target)}</strong> on ${scanDate} at ${scanTime}. `;
+            html += `It queried certificate transparency logs, DNS records, and the Shodan InternetDB database to map the external attack surface without sending any intrusive traffic to the target.<br><br>`;
+
+            html += `<strong>🔍 What was found:</strong> `;
+            html += `<strong>${hostCount}</strong> host(s) resolved to unique IP addresses. `;
+            html += `Across these hosts, <strong>${totalPorts}</strong> open port(s) were identified. `;
+
+            if (totalCves > 0) {
+                html += `The services running on these ports are associated with <strong>${totalCves}</strong> known CVE(s)`;
+                const sevParts = [];
+                if (risk.critical_cve_count > 0) sevParts.push(`<strong style="color:#f85149">${risk.critical_cve_count} critical</strong>`);
+                if (risk.high_cve_count > 0) sevParts.push(`<strong style="color:#d29922">${risk.high_cve_count} high</strong>`);
+                if (sevParts.length) html += ` (${sevParts.join(', ')})`;
+                html += '. These are known vulnerabilities published in the National Vulnerability Database (NVD) that may affect the detected software versions. ';
+            } else {
+                html += 'No known CVEs were associated with the detected services. ';
+            }
+
+            if (missingDns.length > 0) {
+                const names = missingDns.map(s => s.title).slice(0, 4);
+                html += `DNS security analysis found <strong>${missingDns.length}</strong> missing record(s): ${names.join(', ')}. `;
+                html += 'These records protect against email spoofing, DNS cache poisoning, and unauthorized certificate issuance. ';
+            }
+
+            if (missingHeaders.length > 0) {
+                const names = missingHeaders.map(s => s.title).slice(0, 4);
+                html += `HTTP security header analysis found <strong>${missingHeaders.length}</strong> missing header(s): ${names.join(', ')}. `;
+                html += 'These headers instruct browsers to enforce security policies that prevent common web attacks. ';
+            }
+
+            html += `<br><br><strong>❗ What this means:</strong> `;
+            if (risk.score >= 80) {
+                html += `The overall risk level is 🔴 <strong style="color:#f85149">CRITICAL (${risk.score}/100)</strong>. There are severe issues that require immediate attention. The exposed services and vulnerabilities could be actively targeted by attackers.`;
+            } else if (risk.score >= 60) {
+                html += `The overall risk level is 🟡 <strong style="color:#d29922">HIGH (${risk.score}/100)</strong>. Significant security gaps were detected. These should be addressed in the short term to prevent potential exploitation.`;
+            } else if (risk.score >= 40) {
+                html += `The overall risk level is 🟡 <strong style="color:#e3b341">MEDIUM (${risk.score}/100)</strong>. Some security improvements are recommended. While no immediate emergency exists, addressing these findings will strengthen the security posture.`;
+            } else if (risk.score >= 20) {
+                html += `The overall risk level is 🟢 <strong style="color:#3fb950">LOW (${risk.score}/100)</strong>. The attack surface is relatively small with minor configuration improvements available.`;
+            } else {
+                html += `The overall risk level is ⚪ <strong>INFO (${risk.score}/100)</strong>. The external attack surface appears well-configured with no significant risks detected.`;
+            }
+
+            document.getElementById('summaryBox').innerHTML = html;
+        }
+
+        function renderRecommendations(snap, risk, totalCves, totalPorts, totalSignals) {
+            const recs = [];
+
+            // Collect detailed data
+            const allSignals = [];
+            const allCves = [];
+            const allServices = [];
+            for (const host of snap.hosts) {
+                for (const wr of (host.web_risks || [])) {
+                    for (const sig of (wr.signals || [])) {
+                        allSignals.push({ ...sig, host: wr.host });
+                    }
+                }
+                for (const cve of (host.cves || [])) {
+                    allCves.push({ ...cve, ip: host.ip });
+                }
+                for (const svc of (host.services || [])) {
+                    allServices.push({ ...svc, ip: host.ip, hostnames: host.hostnames });
+                }
+            }
+
+            // --- 1. Critical CVEs with specific steps ---
+            const critCves = allCves.filter(c => c.severity === 'critical');
+            if (critCves.length > 0) {
+                const steps = [];
+                const seen = new Set();
+                for (const c of critCves.slice(0, 8)) {
+                    if (seen.has(c.cve_id)) continue;
+                    seen.add(c.cve_id);
+                    let step = `Look up <code>${esc(c.cve_id)}</code>`;
+                    if (c.affected_product) step += ` affecting <code>${esc(c.affected_product)}</code>`;
+                    step += ` on host <code>${esc(c.ip)}</code>`;
+                    if (c.cvss_score) step += ` (CVSS ${c.cvss_score.toFixed(1)})`;
+                    step += ` — check vendor advisory for patch or update`;
+                    steps.push(step);
+                }
+                steps.push('Apply patches or update affected software to the latest stable version');
+                steps.push('If patching is not immediately possible, restrict network access to the affected service using firewall rules');
+                steps.push('Verify the fix by re-scanning with ASMON after patching');
+                recs.push({ priority: 'critical', title: `Patch ${critCves.length} critical vulnerability(s) immediately`, steps });
+            }
+
+            // --- 2. High CVEs with specific steps ---
+            const highCves = allCves.filter(c => c.severity === 'high');
+            if (highCves.length > 0) {
+                const steps = [];
+                const seen = new Set();
+                for (const c of highCves.slice(0, 6)) {
+                    if (seen.has(c.cve_id)) continue;
+                    seen.add(c.cve_id);
+                    let step = `Review <code>${esc(c.cve_id)}</code>`;
+                    if (c.affected_product) step += ` in <code>${esc(c.affected_product)}</code>`;
+                    step += ` on <code>${esc(c.ip)}</code>`;
+                    steps.push(step);
+                }
+                if (highCves.length > 6) steps.push(`... and ${highCves.length - 6} more high-severity CVEs (see CVE table below)`);
+                steps.push('Schedule patching in the next maintenance window');
+                steps.push('Check if any are listed in CISA KEV (actively exploited) — those should be treated as critical');
+                recs.push({ priority: 'high', title: `Address ${highCves.length} high-severity CVE(s)`, steps });
+            }
+
+            // --- 3. Sensitive services with specific close/restrict steps ---
+            const sensitiveMap = {
+                'mysql': { port: 3306, fix: 'Bind MySQL to 127.0.0.1 in my.cnf or block port 3306 in firewall' },
+                'postgresql': { port: 5432, fix: 'Set listen_addresses = localhost in postgresql.conf or block port 5432' },
+                'mongodb': { port: 27017, fix: 'Bind MongoDB to 127.0.0.1 in mongod.conf and enable authentication' },
+                'redis': { port: 6379, fix: 'Set bind 127.0.0.1 in redis.conf and set a password with requirepass' },
+                'elasticsearch': { port: 9200, fix: 'Set network.host: 127.0.0.1 in elasticsearch.yml or use X-Pack security' },
+                'memcached': { port: 11211, fix: 'Bind to localhost with -l 127.0.0.1 flag or block port 11211' },
+                'telnet': { port: 23, fix: 'Disable Telnet entirely and switch to SSH for remote access' },
+                'rdp': { port: 3389, fix: 'Move RDP behind a VPN or enable Network Level Authentication (NLA)' },
+                'vnc': { port: 5900, fix: 'Disable public VNC access and tunnel through SSH or VPN' },
+                'smb': { port: 445, fix: 'Block ports 139 and 445 from the internet in your firewall' },
+                'ftp': { port: 21, fix: 'Replace FTP with SFTP (SSH) or restrict access via firewall' },
+            };
+            const foundSensitive = [];
+            for (const svc of allServices) {
+                const name = (svc.service_name || '').toLowerCase();
+                if (sensitiveMap[name]) {
+                    foundSensitive.push({ name, ip: svc.ip, port: svc.port, ...sensitiveMap[name] });
+                }
+            }
+            if (foundSensitive.length > 0) {
+                const steps = [];
+                const seenSvc = new Set();
+                for (const s of foundSensitive) {
+                    const key = `${s.name}:${s.port}:${s.ip}`;
+                    if (seenSvc.has(key)) continue;
+                    seenSvc.add(key);
+                    steps.push(`Close <code>${esc(s.name)}:${s.port}</code> on <code>${esc(s.ip)}</code> — ${esc(s.fix)}`);
+                }
+                steps.push('If these services must be accessible remotely, put them behind a VPN (WireGuard, OpenVPN) or SSH tunnel');
+                steps.push('After restricting access, verify ports are closed by re-scanning');
+                recs.push({ priority: 'high', title: `Restrict ${foundSensitive.length} exposed sensitive service(s)`, steps });
+            }
+
+            // --- 4. Outdated software with specific upgrade steps ---
+            const outdatedServices = allServices.filter(s => s.product && s.version);
+            if (outdatedServices.length > 0) {
+                const steps = [];
+                const seenProd = new Set();
+                for (const s of outdatedServices.slice(0, 8)) {
+                    const key = `${s.product}:${s.version}`;
+                    if (seenProd.has(key)) continue;
+                    seenProd.add(key);
+                    steps.push(`Update <code>${esc(s.product)} ${esc(s.version)}</code> on <code>${esc(s.ip)}:${s.port}</code> to the latest stable release`);
+                }
+                if (steps.length > 0) {
+                    steps.push('Check release notes for security fixes between your current version and the latest');
+                    steps.push('Test the update in a staging environment before applying to production');
+                    recs.push({ priority: 'medium', title: `Review ${seenProd.size} software version(s) for updates`, steps });
+                }
+            }
+
+            // --- 5. Missing DNS records with specific config steps ---
+            const missingDnsSignals = allSignals.filter(s =>
+                s.signal_type === 'dns_missing_record' ||
+                (s.title && ['SPF','DMARC','DNSSEC','CAA'].some(k => s.title.includes(k)) && s.severity !== 'info')
+            );
+            if (missingDnsSignals.length > 0) {
+                const steps = [];
+                const domain = esc(snap.target);
+                for (const sig of missingDnsSignals) {
+                    const title = (sig.title || '').toLowerCase();
+                    if (title.includes('spf')) {
+                        steps.push(`Add SPF record: <code>${domain} TXT "v=spf1 include:_spf.google.com ~all"</code> (adjust for your mail provider)`);
+                    } else if (title.includes('dmarc')) {
+                        steps.push(`Add DMARC record: <code>_dmarc.${domain} TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@${domain}"</code>`);
+                    } else if (title.includes('dnssec')) {
+                        steps.push(`Enable DNSSEC at your domain registrar — most registrars (Cloudflare, GoDaddy, Namecheap) have a one-click enable option`);
+                    } else if (title.includes('caa')) {
+                        steps.push(`Add CAA record: <code>${domain} CAA 0 issue "letsencrypt.org"</code> (replace with your CA)`);
+                    }
+                }
+                steps.push(`Verify records are live: <code>dig ${domain} TXT</code> and <code>dig _dmarc.${domain} TXT</code>`);
+                recs.push({ priority: 'medium', title: 'Configure missing DNS security records', steps });
+            }
+
+            // --- 6. Missing HTTP headers with specific config steps ---
+            const missingHeaders = allSignals.filter(s => s.signal_type === 'missing_header');
+            if (missingHeaders.length > 0) {
+                const steps = [];
+                for (const sig of missingHeaders) {
+                    const title = (sig.title || '').toLowerCase();
+                    if (title.includes('hsts')) {
+                        steps.push(`Add HSTS header: <code>Strict-Transport-Security: max-age=31536000; includeSubDomains</code>`);
+                    } else if (title.includes('csp') || title.includes('content-security')) {
+                        steps.push(`Add CSP header: <code>Content-Security-Policy: default-src 'self'; script-src 'self'</code> (adjust to your app's needs)`);
+                    } else if (title.includes('x-frame')) {
+                        steps.push(`Add X-Frame-Options header: <code>X-Frame-Options: DENY</code> (or SAMEORIGIN if embedding is needed)`);
+                    } else if (title.includes('x-content-type')) {
+                        steps.push(`Add X-Content-Type-Options header: <code>X-Content-Type-Options: nosniff</code>`);
+                    } else {
+                        steps.push(`Add missing header: <code>${esc(sig.title)}</code>`);
+                    }
+                }
+                steps.push('Configure these in your web server (Nginx: add_header, Apache: Header set) or reverse proxy');
+                steps.push('Test headers at securityheaders.com after deploying');
+                recs.push({ priority: 'medium', title: `Add ${missingHeaders.length} missing HTTP security header(s)`, steps });
+            }
+
+            // --- 7. HTTPS redirect ---
+            const noHttps = allSignals.some(s => s.signal_type === 'no_https_redirect');
+            if (noHttps) {
+                recs.push({
+                    priority: 'medium',
+                    title: 'Enable HTTPS redirect',
+                    steps: [
+                        'In Nginx: <code>server { listen 80; return 301 https://$host$request_uri; }</code>',
+                        'In Apache: <code>RewriteEngine On; RewriteCond %{HTTPS} off; RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301]</code>',
+                        'If using Cloudflare: Enable "Always Use HTTPS" in SSL/TLS settings',
+                        'Verify by visiting http:// version — it should redirect to https://',
+                    ],
+                });
+            }
+
+            // --- 8. Too many open ports ---
+            if (totalPorts > 15) {
+                const portList = allServices.map(s => `${s.port}/${s.protocol}`);
+                const uniquePorts = [...new Set(portList)].sort((a, b) => parseInt(a) - parseInt(b));
+                const steps = [
+                    `Currently exposed ports: <code>${uniquePorts.slice(0, 20).join(', ')}</code>${uniquePorts.length > 20 ? ` + ${uniquePorts.length - 20} more` : ''}`,
+                    'Review each port — if a service is not needed externally, block it in your firewall',
+                    'Common ports to close: development servers (8080, 8443, 8888), admin panels, debug interfaces',
+                    'Use firewall rules: <code>ufw deny [port]</code> or <code>iptables -A INPUT -p tcp --dport [port] -j DROP</code>',
+                ];
+                recs.push({ priority: 'low', title: `Review and reduce ${uniquePorts.length} exposed port(s)`, steps });
+            }
+
+            // --- 9. Schedule regular scans (always) ---
+            recs.push({
+                priority: 'info',
+                title: 'Set up continuous monitoring',
+                steps: [
+                    `Schedule recurring scans: <code>asmon --target ${esc(snap.target)} --diff --schedule 360</code> (every 6 hours)`,
+                    'Add Slack alerts to get notified of changes: <code>--slack-webhook URL --diff</code>',
+                    'Generate reports after each scan: <code>--report html</code>',
+                    'Run retention to keep storage clean: <code>--retain 10 --retain-days 30</code>',
+                ],
+            });
+
+            // --- If clean, say so ---
+            if (recs.length === 1 && risk.score < 20) {
+                recs.unshift({
+                    priority: 'low',
+                    title: 'No critical issues found',
+                    steps: [
+                        'Your external attack surface appears well-configured',
+                        'Continue monitoring regularly for new CVEs and configuration drift',
+                        'Consider running with <code>--web-risk</code> and <code>--active</code> flags for deeper analysis',
+                    ],
+                });
+            }
+
+            // Render
+            const section = document.getElementById('recsSection');
+            let counter = 1;
+            const priEmoji = { critical: '🔴', high: '🟡', medium: '⚠️', low: '🟢', info: '⚪' };
+            const items = recs.map(r => {
+                const stepsHtml = r.steps
+                    ? `<ol class="rec-steps">${r.steps.map(s => `<li>${s}</li>`).join('')}</ol>`
+                    : '';
+                const emoji = priEmoji[r.priority] || '⚪';
+                return `
+                    <div class="rec-item">
+                        <div class="rec-priority rec-priority-${r.priority}">${counter++}</div>
+                        <div class="rec-content">
+                            <div class="rec-title">${emoji} ${esc(r.title)}</div>
+                            ${stepsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            section.innerHTML = `
+                <h3 class="section-title">🛠 Solution Plan (${recs.length} action items)</h3>
+                <div class="rec-list">${items}</div>
+            `;
+        }
+
+        function renderSecurityChecks(snap) {
+            const checks = [];
+
+            // Gather from all signals
+            const allSignals = [];
+            for (const host of snap.hosts) {
+                for (const wr of (host.web_risks || [])) {
+                    for (const sig of (wr.signals || [])) {
+                        allSignals.push({ ...sig, source: wr.host });
+                    }
+                }
+            }
+
+            // DNS checks
+            const signalTypes = new Set(allSignals.map(s => s.title));
+            const dnsList = [
+                { name: 'SPF Record', key: 'SPF' },
+                { name: 'DMARC Record', key: 'DMARC' },
+                { name: 'DNSSEC', key: 'DNSSEC' },
+                { name: 'CAA Record', key: 'CAA' },
+            ];
+            const headerList = [
+                { name: 'HSTS Header', key: 'HSTS' },
+                { name: 'Content-Security-Policy', key: 'CSP' },
+                { name: 'X-Frame-Options', key: 'X-Frame' },
+                { name: 'X-Content-Type-Options', key: 'X-Content-Type' },
+            ];
+
+            for (const item of [...dnsList, ...headerList]) {
+                const missing = allSignals.find(s =>
+                    s.title && s.title.toLowerCase().includes(item.key.toLowerCase()) &&
+                    (s.signal_type === 'missing_header' || s.signal_type === 'dns_missing_record' || s.severity !== 'info')
+                );
+                if (missing) {
+                    checks.push({ name: item.name, status: 'missing', detail: missing.detail || '' });
+                } else {
+                    // Check if any signal confirms presence
+                    const present = allSignals.find(s =>
+                        s.title && s.title.toLowerCase().includes(item.key.toLowerCase()) &&
+                        s.severity === 'info'
+                    );
+                    if (present) {
+                        checks.push({ name: item.name, status: 'present', detail: present.detail || '' });
+                    } else if (allSignals.length > 0) {
+                        // We ran checks but didn't find this - could mean it's fine or not checked
+                        checks.push({ name: item.name, status: 'not_checked', detail: '' });
+                    }
+                }
+            }
+
+            // HTTPS redirect
+            const noRedirect = allSignals.find(s => s.signal_type === 'no_https_redirect');
+            if (noRedirect) {
+                checks.push({ name: 'HTTPS Redirect', status: 'missing', detail: noRedirect.detail || '' });
+            } else if (allSignals.length > 0) {
+                checks.push({ name: 'HTTPS Redirect', status: 'present', detail: '' });
+            }
+
+            const section = document.getElementById('checksSection');
+            if (checks.length === 0) {
+                section.innerHTML = '';
+                return;
+            }
+
+            const rows = checks.map(c => {
+                let statusHtml;
+                if (c.status === 'present') {
+                    statusHtml = '<span class="check-yes">✔️ CONFIGURED</span>';
+                } else if (c.status === 'missing') {
+                    statusHtml = '<span class="check-no">❌ MISSING</span>';
+                } else {
+                    statusHtml = '<span class="check-na">--</span>';
+                }
+                return `<tr><td>${esc(c.name)}</td><td>${statusHtml}</td><td style="color:#8b949e;font-size:12px">${esc(c.detail)}</td></tr>`;
+            }).join('');
+
+            section.innerHTML = `
+                <h3 class="section-title">🔒 Security Configuration</h3>
+                <table class="check-table">
+                    <thead><tr><th>Check</th><th>Status</th><th>Detail</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        }
+
+        function renderHosts(hosts) {
+            const container = document.getElementById('hostsSection');
+            if (hosts.length === 0) {
+                container.innerHTML = '<p style="color:#484f58">No hosts discovered</p>';
+                return;
+            }
+
+            container.innerHTML = hosts.map(host => {
+                const hostnames = (host.hostnames || []).join(', ') || 'No hostnames';
+                const cveCount = (host.cves || []).length;
+                const svcCount = (host.services || []).length;
+
+                let servicesHtml = '';
+                if (host.services && host.services.length > 0) {
+                    const svcRows = host.services
+                        .sort((a, b) => a.port - b.port)
+                        .map(s => `
+                            <tr>
+                                <td>${s.port}</td>
+                                <td>${esc(s.protocol)}</td>
+                                <td>${esc(s.service_name || '-')}</td>
+                                <td>${esc(s.product || '-')}</td>
+                                <td>${esc(s.version || '-')}</td>
+                            </tr>
+                        `).join('');
+                    servicesHtml = `
+                        <table class="host-services-table">
+                            <thead><tr><th>Port</th><th>Proto</th><th>Service</th><th>Product</th><th>Version</th></tr></thead>
+                            <tbody>${svcRows}</tbody>
+                        </table>
+                    `;
+                }
+
+                return `
+                    <div class="host-card">
+                        <div class="host-card-header">
+                            <div>
+                                <div class="host-ip">${esc(host.ip)}</div>
+                                <div class="host-hostnames">${esc(hostnames)}</div>
+                            </div>
+                            <div class="host-badges">
+                                <span class="badge badge-info">${svcCount} ports</span>
+                                <span class="badge badge-${cveCount > 0 ? 'high' : 'info'}">${cveCount} CVEs</span>
+                            </div>
+                        </div>
+                        ${servicesHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCves(hosts) {
+            const allCves = [];
+            for (const host of hosts) {
+                for (const cve of (host.cves || [])) {
+                    allCves.push({ ...cve, ip: host.ip });
+                }
+            }
+
+            const section = document.getElementById('cvesSection');
+            if (allCves.length === 0) {
+                section.innerHTML = '';
+                return;
+            }
+
+            allCves.sort((a, b) => (b.cvss_score || 0) - (a.cvss_score || 0));
+            const rows = allCves.slice(0, 200).map(c => `
+                <tr>
+                    <td><strong>${esc(c.cve_id)}</strong></td>
+                    <td><span class="badge badge-${c.severity || 'info'}">${c.severity || 'unknown'}</span></td>
+                    <td>${c.cvss_score != null ? c.cvss_score.toFixed(1) : '-'}</td>
+                    <td style="font-family:monospace">${esc(c.ip)}</td>
+                    <td>${esc(c.affected_product || '-')}</td>
+                    <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.description || '-')}</td>
+                </tr>
+            `).join('');
+
+            const extra = allCves.length > 200 ? `<p style="color:#484f58;padding:8px 14px;font-size:12px">... and ${allCves.length - 200} more</p>` : '';
+
+            section.innerHTML = `
+                <h3 class="section-title">⚠️ Vulnerabilities (${allCves.length} CVEs)</h3>
+                <table>
+                    <thead><tr><th>CVE ID</th><th>Severity</th><th>CVSS</th><th>Host</th><th>Product</th><th>Description</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                ${extra}
+            `;
+        }
+
+        function renderSignals(hosts) {
+            const allSignals = [];
+            for (const host of hosts) {
+                for (const wr of (host.web_risks || [])) {
+                    for (const sig of (wr.signals || [])) {
+                        allSignals.push({ ...sig, host: wr.host });
+                    }
+                }
+            }
+
+            const section = document.getElementById('signalsSection');
+            if (allSignals.length === 0) {
+                section.innerHTML = '';
+                return;
+            }
+
+            const items = allSignals.map(s => `
+                <div class="signal-item">
+                    <span class="badge badge-${s.severity || 'info'}" style="margin-right:6px">${s.severity}</span>
+                    <span class="signal-title">${esc(s.title)}</span>
+                    <div class="signal-detail">${esc(s.detail)}</div>
+                    ${s.recommendation ? `<div class="signal-rec">${esc(s.recommendation)}</div>` : ''}
+                </div>
+            `).join('');
+
+            section.innerHTML = `
+                <h3 class="section-title">🔔 Security Signals (${allSignals.length})</h3>
+                ${items}
+            `;
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').style.display = 'none';
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = '';
+        }
+
+        function esc(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = String(str);
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
