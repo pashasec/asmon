@@ -85,7 +85,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ai-provider", choices=["openai", "anthropic"], default=None,
                         help="AI provider to use.")
     parser.add_argument("--ai-model", default=None,
-                        help="Model name (e.g. gpt-4o-mini, claude-haiku-3).")
+                        help="Model name (e.g. gpt-4o-mini, haiku-3).")
 
     # --- Output ---
     parser.add_argument("--output", choices=["text", "json"], default="text",

@@ -28,7 +28,7 @@ SHODAN_API_KEY: str | None = os.environ.get("SHODAN_API_KEY")
 
 # ---------------------------------------------------------------------------
 # AI / LLM (optional module)
-# Supports: openai (GPT-4o-mini default), anthropic (claude-haiku-3)
+# Supports: openai (GPT-4o-mini default), anthropic (haiku-3)
 # ---------------------------------------------------------------------------
 AI_PROVIDER: str = os.environ.get("ASMON_AI_PROVIDER", "openai")
 AI_API_KEY: str | None = os.environ.get("ASMON_AI_API_KEY")

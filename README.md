@@ -385,7 +385,7 @@ python -m asmon.asmon --target example.com --shodan --clean
 | `--ai-summary`     | Generate AI-assisted summary of changes (requires `--diff`)      |
 | `--ai-key`         | AI provider API key (overrides env var)                          |
 | `--ai-provider`    | `openai` or `anthropic` (default: `openai`)                      |
-| `--ai-model`       | Model identifier (e.g. `gpt-4o-mini`, `claude-haiku-3`)          |
+| `--ai-model`       | Model identifier (e.g. `gpt-4o-mini`, `haiku-3`)                 |
 
 ---
 

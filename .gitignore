@@ -1,5 +1,6 @@
 # Runtime-generated files
 asmon/data/
+.claude/
 __pycache__/
 *.pyc
 .env

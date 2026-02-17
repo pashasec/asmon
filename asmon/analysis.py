@@ -12,7 +12,7 @@ Design constraints (non-negotiable):
 
 Supported providers:
   - openai  (default: gpt-4o-mini)
-  - anthropic (claude-haiku-3)
+  - anthropic (haiku-3)
 
 Set ASMON_AI_PROVIDER and ASMON_AI_API_KEY in env, or pass at runtime.
 """
