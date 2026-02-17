@@ -6,6 +6,10 @@ A security research tool for passive attack surface discovery and change-detecti
 
 **Not a replacement for:** Enterprise EASM platforms (Rapid7, Palo Alto Xpanse, Microsoft Defender EASM, Qualys EASM), Shodan, or other commercial attack surface monitoring solutions.
 
+
+<img width="1920" height="1044" alt="image" src="https://github.com/user-attachments/assets/fa9675d5-7d76-4be6-849d-ecb2e827b128" />
+
+
 ---
 
 ## What it does
