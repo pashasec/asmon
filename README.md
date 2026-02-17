@@ -29,6 +29,9 @@ A security research tool for passive attack surface discovery and change-detecti
 13. **Multi-target scheduling** — define targets in `targets.yaml`, run on cron intervals.
 14. **Slack alerting** — severity-filtered notifications with deduplication.
 
+
+<img width="1920" height="996" alt="image" src="https://github.com/user-attachments/assets/5e6f58ed-e2a3-42e3-96c6-a380006a0f7e" />
+
 ---
 
 ## Scan Types Explained
