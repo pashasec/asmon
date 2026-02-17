@@ -148,13 +148,15 @@ data/
 ├── snapshots/                   ← persisted snapshots (gitignored)
 └── logs/                        ← asmon.log
 
+targets.yaml                     ← multi-target config (user-created)
+targets.yaml.example             ← example config template
 requirements.txt                 ← core dependencies
 ```
 
 ### Data flow
 
 ```
-User input (domain)
+User input (domain or targets.yaml)
         │
         ▼
 ┌──────────────────────┐
@@ -164,36 +166,39 @@ User input (domain)
            │
            ├─→ (if 0 IPs: stop here)
            │
-           ├─→ (if --shodan) ──→ ┌──────────────┐
-           │                     │ ShodanClient │
-           │                     └──────┬───────┘
-           │                            │
-           ├─→ (if --web-risk) ─→ ┌──────────────┐
-           │                      │  WebAnalyzer │
-           │                      └──────┬───────┘
-           │                             │
-           ├─→ (if --active) ──────────→ ┌──────────────┐
-           │                             │ ActiveScanner│
-           │                             └──────┬───────┘
-           │                                    │
-           └─→ (if --vuln-scan) ────────────→ ┌──────────────┐
-                                              │ModuleOrch.   │
-                                              └──────┬───────┘
-                                                     │
-                                              ┌──────▼────────┐
-                                              │   Snapshot    │──→ SnapshotStore (disk)
-                                              └──────┬────────┘
-                                                     │
-                                    ┌────────────────┼────────────────┐
-                                    │ (if --diff)    │                 │
-                                    ▼                ▼                 ▼
-                                load baseline   compute_diff   render output
-                                                    │             (text/json)
-                                                    ▼
-                                          ┌──────────────────┐
-                                          │  AI Analysis     │  (if --ai-summary)
-                                          │  (advisory only) │
-                                          └──────────────────┘
+           ├─→ InternetDB ────→ ports, CVEs, hostnames (free, no key)
+           ├─→ CISA KEV ──────→ known exploited vulnerability flags
+           ├─→ EPSS ──────────→ exploitation probability scores
+           ├─→ DNS Security ──→ SPF, DMARC, DNSSEC, CAA checks
+           │
+           ├─→ (if --shodan) ──→ ShodanClient → services, banners, CVEs
+           ├─→ (if --web-risk) → WebAnalyzer  → headers, cookies, signals
+           ├─→ (if --active) ──→ ActiveScanner → ports, fingerprints
+           └─→ (if --vuln-scan) → ModuleOrch.  → SQLi, XSS, RCE, etc.
+                                        │
+                                 ┌──────▼────────┐
+                                 │  Risk Scoring  │ (0-100)
+                                 └──────┬────────┘
+                                        │
+                                 ┌──────▼────────┐
+                                 │   Snapshot    │──→ SnapshotStore (disk)
+                                 └──────┬────────┘
+                                        │
+                       ┌────────────────┼──────────────────┐
+                       │ (if --diff)    │                   │
+                       ▼                ▼                   ▼
+                   load baseline   compute_diff      render output
+                                       │              (text/json/html)
+                                       ▼
+                             ┌──────────────────┐
+                             │  AI Analysis     │  (if --ai-summary)
+                             │  (advisory only) │
+                             └────────┬─────────┘
+                                      │
+                       ┌──────────────┼──────────────┐
+                       ▼              ▼              ▼
+                  Slack Alert    HTML Report    Web Dashboard
+                (--slack-webhook) (--report)   (--dashboard)
 ```
 
 ---
@@ -224,6 +229,7 @@ All configuration is via environment variables. CLI flags override where noted.
 | `ASMON_AI_MODEL`      | No       | `gpt-4o-mini`      | Model name                           |
 | `ASMON_DATA_DIR`      | No       | `./data`           | Where snapshots and logs are stored  |
 | `ASMON_LOG_LEVEL`     | No       | `INFO`             | `DEBUG`, `INFO`, `WARNING`, `ERROR`  |
+| `ASMON_SLACK_WEBHOOK` | No       | —                  | Slack webhook URL for alerting       |
 
 \* Required only if `--shodan` is used.
 \** Required only if `--ai-summary` is used.
@@ -377,14 +383,41 @@ python -m asmon.asmon --orchestrate
 ### 14. Slack alerting
 
 ```bash
-# Set your Slack webhook URL
+# Via environment variable
 export ASMON_SLACK_WEBHOOK="https://hooks.slack.com/services/..."
+python -m asmon.asmon --target example.com --shodan --diff
 
-# Alerts are sent automatically when scans detect high/critical findings
-python -m asmon.asmon --target example.com --alert-slack
+# Or pass directly
+python -m asmon.asmon --target example.com --shodan --diff \
+  --slack-webhook "https://hooks.slack.com/services/..."
 ```
 
-### 15. HTML report generation
+### 15. Scheduled scanning
+
+```bash
+# Re-run scan every 6 hours
+python -m asmon.asmon --target example.com --shodan --diff --schedule 360
+
+# With Slack alerts, stop after 10 cycles
+python -m asmon.asmon --target example.com --shodan --diff \
+  --slack-webhook "https://hooks.slack.com/services/..." \
+  --schedule 360 --max-cycles 10
+```
+
+### 16. Snapshot retention
+
+```bash
+# Keep only the 10 most recent snapshots per target
+python -m asmon.asmon --target example.com --shodan --retain 10
+
+# Delete snapshots older than 30 days
+python -m asmon.asmon --target example.com --shodan --retain-days 30
+
+# View storage usage
+python -m asmon.asmon --storage-info
+```
+
+### 17. HTML report generation
 
 ```bash
 # Generate a downloadable HTML report
@@ -448,12 +481,33 @@ Reports include risk scoring breakdown, CVE tables, service exposure, DNS securi
 | `--vuln-skip-warning`  | Skip authorization confirmation prompt (for automation)          |
 | `--callback-url`       | OOB callback server URL for blind vulnerability detection        |
 
+### Slack Alerting
+
+| Flag                  | Description                                                      |
+|-----------------------|------------------------------------------------------------------|
+| `--slack-webhook`     | Slack incoming webhook URL. Requires `--diff`. Env: `ASMON_SLACK_WEBHOOK` |
+
+### Scheduling
+
+| Flag                  | Description                                                      |
+|-----------------------|------------------------------------------------------------------|
+| `--schedule MINUTES`  | Re-run the scan every N minutes (e.g. `360` for every 6 hours)  |
+| `--max-cycles N`      | Stop after N cycles (default: `0` = unlimited)                   |
+
+### Snapshot Retention
+
+| Flag                  | Description                                                      |
+|-----------------------|------------------------------------------------------------------|
+| `--retain N`          | Keep only the N most recent snapshots per target (0 = unlimited) |
+| `--retain-days DAYS`  | Delete snapshots older than N days (most recent always kept)     |
+| `--storage-info`      | Show snapshot storage usage and exit                             |
+
 ### Dashboard
 
 | Flag                  | Description                                                      |
 |-----------------------|------------------------------------------------------------------|
 | `--dashboard`         | Start the web dashboard                                          |
-| `--dashboard-host`    | Bind address (default: `127.0.0.1`)                              |
+| `--dashboard-host`    | Bind address (default: `0.0.0.0`)                                |
 | `--dashboard-port`    | Port number (default: `8000`)                                    |
 
 ### Diff and Analysis
