@@ -1,6 +1,7 @@
 # ASMON — Attack Surface Monitor
 
-<img width="818" height="253" alt="image" src="https://github.com/user-attachments/assets/cc76a91f-a9e7-4420-89be-3fec3473a41b" />
+<img width="818" height="253" alt="Screenshot_2026-02-17_124832-removebg-preview" src="https://github.com/user-attachments/assets/a6e789d6-36fa-4f0b-b666-7e0daeefef2c" />
+
 
 
 A security research tool for passive attack surface discovery and change-detection. Discovers exposed assets via certificate transparency logs (crt.sh), enriches them with Shodan, InternetDB, CISA KEV, and EPSS data, and diffs snapshots over time to surface new exposures and changes. Includes a web dashboard for browser-based scanning, multi-target scheduling, Slack alerting, and downloadable HTML reports.
